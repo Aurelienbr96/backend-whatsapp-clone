@@ -35,11 +35,7 @@ func (v *TwilioAdapter) SendOTP(to string) error {
 	return nil
 }
 
-func (v *TwilioAdapter) VerififyOTP(to string) error {
-	var code string
-	fmt.Println("Please check your phone and enter the code:")
-	fmt.Scanln(&code)
-
+func (v *TwilioAdapter) VerififyOTP(to string, code string) error {
 	params := &openapi.CreateVerificationCheckParams{}
 	params.SetTo(to)
 	params.SetCode(code)

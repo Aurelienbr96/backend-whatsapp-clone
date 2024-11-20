@@ -8,9 +8,9 @@ import (
 )
 
 func NewPsqlDB(config *config.Config) (*ent.Client, error) {
-	fmt.Printf("config: %v", config)
 
 	connString := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s", config.Postgres.Host, config.Postgres.Port, config.Postgres.Username, config.Postgres.Database, config.Postgres.Password, config.Postgres.Sslmode)
+	fmt.Printf("config: %s", connString)
 
 	client, err := ent.Open("postgres", connString)
 	if err != nil {

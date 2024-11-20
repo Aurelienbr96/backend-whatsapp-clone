@@ -19,9 +19,45 @@ type User struct {
 	ID uuid.UUID `json:"id,omitempty"`
 	// PhoneNumber holds the value of the "phone_number" field.
 	PhoneNumber string `json:"phone_number,omitempty"`
-	// Name holds the value of the "name" field.
-	Name         string `json:"name,omitempty"`
+	// Avatar holds the value of the "avatar" field.
+	Avatar string `json:"avatar,omitempty"`
+	// Username holds the value of the "username" field.
+	Username string `json:"username,omitempty"`
+	// IsVerified holds the value of the "is_verified" field.
+	IsVerified bool `json:"is_verified,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the UserQuery when eager-loading is set.
+	Edges        UserEdges `json:"edges"`
 	selectValues sql.SelectValues
+}
+
+// UserEdges holds the relations/edges for other nodes in the graph.
+type UserEdges struct {
+	// Contacts holds the value of the contacts edge.
+	Contacts []*Contact `json:"contacts,omitempty"`
+	// Contact holds the value of the contact edge.
+	Contact []*Contact `json:"contact,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [2]bool
+}
+
+// ContactsOrErr returns the Contacts value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) ContactsOrErr() ([]*Contact, error) {
+	if e.loadedTypes[0] {
+		return e.Contacts, nil
+	}
+	return nil, &NotLoadedError{edge: "contacts"}
+}
+
+// ContactOrErr returns the Contact value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) ContactOrErr() ([]*Contact, error) {
+	if e.loadedTypes[1] {
+		return e.Contact, nil
+	}
+	return nil, &NotLoadedError{edge: "contact"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -29,7 +65,9 @@ func (*User) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case user.FieldPhoneNumber, user.FieldName:
+		case user.FieldIsVerified:
+			values[i] = new(sql.NullBool)
+		case user.FieldPhoneNumber, user.FieldAvatar, user.FieldUsername:
 			values[i] = new(sql.NullString)
 		case user.FieldID:
 			values[i] = new(uuid.UUID)
@@ -60,11 +98,23 @@ func (u *User) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				u.PhoneNumber = value.String
 			}
-		case user.FieldName:
+		case user.FieldAvatar:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field name", values[i])
+				return fmt.Errorf("unexpected type %T for field avatar", values[i])
 			} else if value.Valid {
-				u.Name = value.String
+				u.Avatar = value.String
+			}
+		case user.FieldUsername:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field username", values[i])
+			} else if value.Valid {
+				u.Username = value.String
+			}
+		case user.FieldIsVerified:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field is_verified", values[i])
+			} else if value.Valid {
+				u.IsVerified = value.Bool
 			}
 		default:
 			u.selectValues.Set(columns[i], values[i])
@@ -77,6 +127,16 @@ func (u *User) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (u *User) Value(name string) (ent.Value, error) {
 	return u.selectValues.Get(name)
+}
+
+// QueryContacts queries the "contacts" edge of the User entity.
+func (u *User) QueryContacts() *ContactQuery {
+	return NewUserClient(u.config).QueryContacts(u)
+}
+
+// QueryContact queries the "contact" edge of the User entity.
+func (u *User) QueryContact() *ContactQuery {
+	return NewUserClient(u.config).QueryContact(u)
 }
 
 // Update returns a builder for updating this User.
@@ -105,8 +165,14 @@ func (u *User) String() string {
 	builder.WriteString("phone_number=")
 	builder.WriteString(u.PhoneNumber)
 	builder.WriteString(", ")
-	builder.WriteString("name=")
-	builder.WriteString(u.Name)
+	builder.WriteString("avatar=")
+	builder.WriteString(u.Avatar)
+	builder.WriteString(", ")
+	builder.WriteString("username=")
+	builder.WriteString(u.Username)
+	builder.WriteString(", ")
+	builder.WriteString("is_verified=")
+	builder.WriteString(fmt.Sprintf("%v", u.IsVerified))
 	builder.WriteByte(')')
 	return builder.String()
 }

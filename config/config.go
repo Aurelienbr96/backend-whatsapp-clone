@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/spf13/viper"
@@ -36,7 +35,8 @@ func LoadConfig() (*viper.Viper, error) {
 	config := viper.New()
 
 	config.SetConfigName("config-local")
-	config.AddConfigPath("./../config")
+	config.AddConfigPath("config")
+	config.AddConfigPath("../config")
 	config.SetConfigType("yaml")
 	err := config.ReadInConfig()
 
@@ -49,7 +49,6 @@ func LoadConfig() (*viper.Viper, error) {
 
 func ParseConfig(v *viper.Viper) (*Config, error) {
 	var c Config
-	fmt.Printf("here wqkjenqjwnew")
 
 	err := v.Unmarshal(&c)
 	if err != nil {

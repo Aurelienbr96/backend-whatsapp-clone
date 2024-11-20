@@ -1,6 +1,8 @@
 package main
 
 import (
+	"log"
+
 	"example.com/boiletplate/config"
 	"example.com/boiletplate/pkg/db/postgres"
 	"example.com/boiletplate/pkg/db/rabbitmq"
@@ -23,6 +25,7 @@ func main() {
 	errors.FailOnError(err, "Could not parse viper config")
 
 	entClient, err := postgres.NewPsqlDB(config)
+	log.Printf("ent client: %v", entClient)
 	errors.FailOnError(err, "Could not set connect to postgresql")
 	defer entClient.Close()
 

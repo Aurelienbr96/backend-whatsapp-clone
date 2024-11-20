@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"example.com/boiletplate/ent/contact"
 	"example.com/boiletplate/ent/schema"
 	"example.com/boiletplate/ent/user"
 	"github.com/google/uuid"
@@ -12,8 +13,18 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	contactFields := schema.Contact{}.Fields()
+	_ = contactFields
+	// contactDescID is the schema descriptor for id field.
+	contactDescID := contactFields[0].Descriptor()
+	// contact.DefaultID holds the default value on creation for the id field.
+	contact.DefaultID = contactDescID.Default.(func() uuid.UUID)
 	userFields := schema.User{}.Fields()
 	_ = userFields
+	// userDescIsVerified is the schema descriptor for is_verified field.
+	userDescIsVerified := userFields[4].Descriptor()
+	// user.DefaultIsVerified holds the default value on creation for the is_verified field.
+	user.DefaultIsVerified = userDescIsVerified.Default.(bool)
 	// userDescID is the schema descriptor for id field.
 	userDescID := userFields[0].Descriptor()
 	// user.DefaultID holds the default value on creation for the id field.

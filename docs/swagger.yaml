@@ -1,5 +1,46 @@
 definitions:
-  model.User:
+  auth.LoginDTO:
+    properties:
+      code:
+        type: string
+      phoneNumber:
+        type: string
+    required:
+    - code
+    - phoneNumber
+    type: object
+  auth.SendCodeDTO:
+    properties:
+      phoneNumber:
+        type: string
+    required:
+    - phoneNumber
+    type: object
+  model.UserWithId:
+    properties:
+      id:
+        type: string
+    type: object
+  user.ContactsToSync:
+    properties:
+      contactIds:
+        items:
+          type: string
+        type: array
+      ownerId:
+        type: string
+    required:
+    - contactIds
+    - ownerId
+    type: object
+  user.UserToCreate:
+    properties:
+      phoneNumber:
+        type: string
+    required:
+    - phoneNumber
+    type: object
+  user.UserToUpdate:
     properties:
       name:
         type: string
@@ -12,6 +53,108 @@ definitions:
 info:
   contact: {}
 paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Login a user
+      parameters:
+      - description: Login data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: You are logged in
+          schema:
+            type: string
+      summary: Login User
+      tags:
+      - example
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Logout a user
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: You are logged out
+          schema:
+            type: string
+      summary: Logout User
+      tags:
+      - example
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Refresh Access token
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            type: string
+      summary: Refresh Access token
+      tags:
+      - example
+  /auth/send-code:
+    post:
+      consumes:
+      - application/json
+      description: Login a user
+      parameters:
+      - description: Send code body
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/auth.SendCodeDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Code sent s
+          schema:
+            type: string
+      summary: Login User
+      tags:
+      - example
+  /contact/{userId}:
+    get:
+      consumes:
+      - application/json
+      description: Get a user contacts by ID
+      parameters:
+      - description: User ID
+        example: '"123e4567-e89b-12d3-a456-426614174000"'
+        in: path
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get User's contacts
+      tags:
+      - example
   /user:
     post:
       consumes:
@@ -23,7 +166,7 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/model.User'
+          $ref: '#/definitions/user.UserToCreate'
       produces:
       - application/json
       responses:
@@ -45,6 +188,43 @@ paths:
       tags:
       - example
   /user/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a user
+      parameters:
+      - description: User ID
+        example: '"123e4567-e89b-12d3-a456-426614174000"'
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User successfully deleted
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Could not find this user
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Delete User
+      tags:
+      - example
     get:
       consumes:
       - application/json
@@ -62,7 +242,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.User'
+            $ref: '#/definitions/model.UserWithId'
         "400":
           description: Bad Request
           schema:
@@ -74,6 +254,132 @@ paths:
           schema:
             type: string
       summary: Get User
+      tags:
+      - example
+    put:
+      consumes:
+      - application/json
+      description: Update a new user
+      parameters:
+      - description: User Data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/user.UserToUpdate'
+      - description: User ID
+        example: '"123e4567-e89b-12d3-a456-426614174000"'
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User successfully updated
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Update User
+      tags:
+      - example
+  /user/by-phone/{phoneNumber}:
+    get:
+      consumes:
+      - application/json
+      description: Get a user by PhoneNumber
+      parameters:
+      - description: User ID
+        example: '"+33602222632"'
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.UserWithId'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get User
+      tags:
+      - example
+  /user/me:
+    get:
+      consumes:
+      - application/json
+      description: Get user's connected information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.UserWithId'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get User
+      tags:
+      - example
+  /user/sync-contacts:
+    post:
+      consumes:
+      - application/json
+      description: Sync contact
+      parameters:
+      - description: Contact Data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/user.ContactsToSync'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: contacts successfully synced
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Sync contact
       tags:
       - example
 swagger: "2.0"

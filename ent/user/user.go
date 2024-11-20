@@ -4,6 +4,7 @@ package user
 
 import (
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/google/uuid"
 )
 
@@ -14,17 +15,41 @@ const (
 	FieldID = "id"
 	// FieldPhoneNumber holds the string denoting the phone_number field in the database.
 	FieldPhoneNumber = "phone_number"
-	// FieldName holds the string denoting the name field in the database.
-	FieldName = "name"
+	// FieldAvatar holds the string denoting the avatar field in the database.
+	FieldAvatar = "avatar"
+	// FieldUsername holds the string denoting the username field in the database.
+	FieldUsername = "username"
+	// FieldIsVerified holds the string denoting the is_verified field in the database.
+	FieldIsVerified = "is_verified"
+	// EdgeContacts holds the string denoting the contacts edge name in mutations.
+	EdgeContacts = "contacts"
+	// EdgeContact holds the string denoting the contact edge name in mutations.
+	EdgeContact = "contact"
 	// Table holds the table name of the user in the database.
 	Table = "users"
+	// ContactsTable is the table that holds the contacts relation/edge.
+	ContactsTable = "contacts"
+	// ContactsInverseTable is the table name for the Contact entity.
+	// It exists in this package in order to avoid circular dependency with the "contact" package.
+	ContactsInverseTable = "contacts"
+	// ContactsColumn is the table column denoting the contacts relation/edge.
+	ContactsColumn = "owner_id"
+	// ContactTable is the table that holds the contact relation/edge.
+	ContactTable = "contacts"
+	// ContactInverseTable is the table name for the Contact entity.
+	// It exists in this package in order to avoid circular dependency with the "contact" package.
+	ContactInverseTable = "contacts"
+	// ContactColumn is the table column denoting the contact relation/edge.
+	ContactColumn = "contact_user_id"
 )
 
 // Columns holds all SQL columns for user fields.
 var Columns = []string{
 	FieldID,
 	FieldPhoneNumber,
-	FieldName,
+	FieldAvatar,
+	FieldUsername,
+	FieldIsVerified,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -38,6 +63,8 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultIsVerified holds the default value on creation for the "is_verified" field.
+	DefaultIsVerified bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -55,7 +82,59 @@ func ByPhoneNumber(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPhoneNumber, opts...).ToFunc()
 }
 
-// ByName orders the results by the name field.
-func ByName(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldName, opts...).ToFunc()
+// ByAvatar orders the results by the avatar field.
+func ByAvatar(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAvatar, opts...).ToFunc()
+}
+
+// ByUsername orders the results by the username field.
+func ByUsername(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUsername, opts...).ToFunc()
+}
+
+// ByIsVerified orders the results by the is_verified field.
+func ByIsVerified(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIsVerified, opts...).ToFunc()
+}
+
+// ByContactsCount orders the results by contacts count.
+func ByContactsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newContactsStep(), opts...)
+	}
+}
+
+// ByContacts orders the results by contacts terms.
+func ByContacts(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newContactsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByContactCount orders the results by contact count.
+func ByContactCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newContactStep(), opts...)
+	}
+}
+
+// ByContact orders the results by contact terms.
+func ByContact(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newContactStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+func newContactsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ContactsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ContactsTable, ContactsColumn),
+	)
+}
+func newContactStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ContactInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, true, ContactTable, ContactColumn),
+	)
 }

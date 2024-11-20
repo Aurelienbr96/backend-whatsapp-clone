@@ -15,6 +15,8 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"example.com/boiletplate/ent/contact"
 	"example.com/boiletplate/ent/user"
 )
 
@@ -23,6 +25,8 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// Contact is the client for interacting with the Contact builders.
+	Contact *ContactClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
@@ -36,6 +40,7 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.Contact = NewContactClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -127,9 +132,10 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		User:   NewUserClient(cfg),
+		ctx:     ctx,
+		config:  cfg,
+		Contact: NewContactClient(cfg),
+		User:    NewUserClient(cfg),
 	}, nil
 }
 
@@ -147,16 +153,17 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		User:   NewUserClient(cfg),
+		ctx:     ctx,
+		config:  cfg,
+		Contact: NewContactClient(cfg),
+		User:    NewUserClient(cfg),
 	}, nil
 }
 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		User.
+//		Contact.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -178,22 +185,191 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.Contact.Use(hooks...)
 	c.User.Use(hooks...)
 }
 
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
+	c.Contact.Intercept(interceptors...)
 	c.User.Intercept(interceptors...)
 }
 
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
+	case *ContactMutation:
+		return c.Contact.mutate(ctx, m)
 	case *UserMutation:
 		return c.User.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
+// ContactClient is a client for the Contact schema.
+type ContactClient struct {
+	config
+}
+
+// NewContactClient returns a client for the Contact from the given config.
+func NewContactClient(c config) *ContactClient {
+	return &ContactClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `contact.Hooks(f(g(h())))`.
+func (c *ContactClient) Use(hooks ...Hook) {
+	c.hooks.Contact = append(c.hooks.Contact, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `contact.Intercept(f(g(h())))`.
+func (c *ContactClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Contact = append(c.inters.Contact, interceptors...)
+}
+
+// Create returns a builder for creating a Contact entity.
+func (c *ContactClient) Create() *ContactCreate {
+	mutation := newContactMutation(c.config, OpCreate)
+	return &ContactCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Contact entities.
+func (c *ContactClient) CreateBulk(builders ...*ContactCreate) *ContactCreateBulk {
+	return &ContactCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ContactClient) MapCreateBulk(slice any, setFunc func(*ContactCreate, int)) *ContactCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ContactCreateBulk{err: fmt.Errorf("calling to ContactClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ContactCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ContactCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Contact.
+func (c *ContactClient) Update() *ContactUpdate {
+	mutation := newContactMutation(c.config, OpUpdate)
+	return &ContactUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ContactClient) UpdateOne(co *Contact) *ContactUpdateOne {
+	mutation := newContactMutation(c.config, OpUpdateOne, withContact(co))
+	return &ContactUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ContactClient) UpdateOneID(id uuid.UUID) *ContactUpdateOne {
+	mutation := newContactMutation(c.config, OpUpdateOne, withContactID(id))
+	return &ContactUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Contact.
+func (c *ContactClient) Delete() *ContactDelete {
+	mutation := newContactMutation(c.config, OpDelete)
+	return &ContactDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ContactClient) DeleteOne(co *Contact) *ContactDeleteOne {
+	return c.DeleteOneID(co.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ContactClient) DeleteOneID(id uuid.UUID) *ContactDeleteOne {
+	builder := c.Delete().Where(contact.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ContactDeleteOne{builder}
+}
+
+// Query returns a query builder for Contact.
+func (c *ContactClient) Query() *ContactQuery {
+	return &ContactQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeContact},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Contact entity by its id.
+func (c *ContactClient) Get(ctx context.Context, id uuid.UUID) (*Contact, error) {
+	return c.Query().Where(contact.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ContactClient) GetX(ctx context.Context, id uuid.UUID) *Contact {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryOwner queries the owner edge of a Contact.
+func (c *ContactClient) QueryOwner(co *Contact) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := co.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(contact.Table, contact.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, contact.OwnerTable, contact.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(co.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryContactUser queries the contact_user edge of a Contact.
+func (c *ContactClient) QueryContactUser(co *Contact) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := co.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(contact.Table, contact.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, contact.ContactUserTable, contact.ContactUserColumn),
+		)
+		fromV = sqlgraph.Neighbors(co.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ContactClient) Hooks() []Hook {
+	return c.hooks.Contact
+}
+
+// Interceptors returns the client interceptors.
+func (c *ContactClient) Interceptors() []Interceptor {
+	return c.inters.Contact
+}
+
+func (c *ContactClient) mutate(ctx context.Context, m *ContactMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ContactCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ContactUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ContactUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ContactDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Contact mutation op: %q", m.Op())
 	}
 }
 
@@ -305,6 +481,38 @@ func (c *UserClient) GetX(ctx context.Context, id uuid.UUID) *User {
 	return obj
 }
 
+// QueryContacts queries the contacts edge of a User.
+func (c *UserClient) QueryContacts(u *User) *ContactQuery {
+	query := (&ContactClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(contact.Table, contact.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.ContactsTable, user.ContactsColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryContact queries the contact edge of a User.
+func (c *UserClient) QueryContact(u *User) *ContactQuery {
+	query := (&ContactClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(contact.Table, contact.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, user.ContactTable, user.ContactColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
@@ -333,9 +541,9 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		User []ent.Hook
+		Contact, User []ent.Hook
 	}
 	inters struct {
-		User []ent.Interceptor
+		Contact, User []ent.Interceptor
 	}
 )

@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -11,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"example.com/boiletplate/ent/contact"
 	"example.com/boiletplate/ent/predicate"
 	"example.com/boiletplate/ent/user"
 	"github.com/google/uuid"
@@ -19,10 +21,12 @@ import (
 // UserQuery is the builder for querying User entities.
 type UserQuery struct {
 	config
-	ctx        *QueryContext
-	order      []user.OrderOption
-	inters     []Interceptor
-	predicates []predicate.User
+	ctx          *QueryContext
+	order        []user.OrderOption
+	inters       []Interceptor
+	predicates   []predicate.User
+	withContacts *ContactQuery
+	withContact  *ContactQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -57,6 +61,50 @@ func (uq *UserQuery) Unique(unique bool) *UserQuery {
 func (uq *UserQuery) Order(o ...user.OrderOption) *UserQuery {
 	uq.order = append(uq.order, o...)
 	return uq
+}
+
+// QueryContacts chains the current query on the "contacts" edge.
+func (uq *UserQuery) QueryContacts() *ContactQuery {
+	query := (&ContactClient{config: uq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(contact.Table, contact.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.ContactsTable, user.ContactsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryContact chains the current query on the "contact" edge.
+func (uq *UserQuery) QueryContact() *ContactQuery {
+	query := (&ContactClient{config: uq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(contact.Table, contact.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, user.ContactTable, user.ContactColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first User entity from the query.
@@ -246,15 +294,39 @@ func (uq *UserQuery) Clone() *UserQuery {
 		return nil
 	}
 	return &UserQuery{
-		config:     uq.config,
-		ctx:        uq.ctx.Clone(),
-		order:      append([]user.OrderOption{}, uq.order...),
-		inters:     append([]Interceptor{}, uq.inters...),
-		predicates: append([]predicate.User{}, uq.predicates...),
+		config:       uq.config,
+		ctx:          uq.ctx.Clone(),
+		order:        append([]user.OrderOption{}, uq.order...),
+		inters:       append([]Interceptor{}, uq.inters...),
+		predicates:   append([]predicate.User{}, uq.predicates...),
+		withContacts: uq.withContacts.Clone(),
+		withContact:  uq.withContact.Clone(),
 		// clone intermediate query.
 		sql:  uq.sql.Clone(),
 		path: uq.path,
 	}
+}
+
+// WithContacts tells the query-builder to eager-load the nodes that are connected to
+// the "contacts" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithContacts(opts ...func(*ContactQuery)) *UserQuery {
+	query := (&ContactClient{config: uq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withContacts = query
+	return uq
+}
+
+// WithContact tells the query-builder to eager-load the nodes that are connected to
+// the "contact" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithContact(opts ...func(*ContactQuery)) *UserQuery {
+	query := (&ContactClient{config: uq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withContact = query
+	return uq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -333,8 +405,12 @@ func (uq *UserQuery) prepareQuery(ctx context.Context) error {
 
 func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, error) {
 	var (
-		nodes = []*User{}
-		_spec = uq.querySpec()
+		nodes       = []*User{}
+		_spec       = uq.querySpec()
+		loadedTypes = [2]bool{
+			uq.withContacts != nil,
+			uq.withContact != nil,
+		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*User).scanValues(nil, columns)
@@ -342,6 +418,7 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	_spec.Assign = func(columns []string, values []any) error {
 		node := &User{config: uq.config}
 		nodes = append(nodes, node)
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	for i := range hooks {
@@ -353,7 +430,82 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := uq.withContacts; query != nil {
+		if err := uq.loadContacts(ctx, query, nodes,
+			func(n *User) { n.Edges.Contacts = []*Contact{} },
+			func(n *User, e *Contact) { n.Edges.Contacts = append(n.Edges.Contacts, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := uq.withContact; query != nil {
+		if err := uq.loadContact(ctx, query, nodes,
+			func(n *User) { n.Edges.Contact = []*Contact{} },
+			func(n *User, e *Contact) { n.Edges.Contact = append(n.Edges.Contact, e) }); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
+}
+
+func (uq *UserQuery) loadContacts(ctx context.Context, query *ContactQuery, nodes []*User, init func(*User), assign func(*User, *Contact)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(contact.FieldOwnerID)
+	}
+	query.Where(predicate.Contact(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.ContactsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.OwnerID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "owner_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (uq *UserQuery) loadContact(ctx context.Context, query *ContactQuery, nodes []*User, init func(*User), assign func(*User, *Contact)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(contact.FieldContactUserID)
+	}
+	query.Where(predicate.Contact(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.ContactColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ContactUserID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "contact_user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
 }
 
 func (uq *UserQuery) sqlCount(ctx context.Context) (int, error) {

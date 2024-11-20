@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"example.com/boiletplate/ent/contact"
 	"example.com/boiletplate/ent/user"
 	"github.com/google/uuid"
 )
@@ -26,9 +27,45 @@ func (uc *UserCreate) SetPhoneNumber(s string) *UserCreate {
 	return uc
 }
 
-// SetName sets the "name" field.
-func (uc *UserCreate) SetName(s string) *UserCreate {
-	uc.mutation.SetName(s)
+// SetAvatar sets the "avatar" field.
+func (uc *UserCreate) SetAvatar(s string) *UserCreate {
+	uc.mutation.SetAvatar(s)
+	return uc
+}
+
+// SetNillableAvatar sets the "avatar" field if the given value is not nil.
+func (uc *UserCreate) SetNillableAvatar(s *string) *UserCreate {
+	if s != nil {
+		uc.SetAvatar(*s)
+	}
+	return uc
+}
+
+// SetUsername sets the "username" field.
+func (uc *UserCreate) SetUsername(s string) *UserCreate {
+	uc.mutation.SetUsername(s)
+	return uc
+}
+
+// SetNillableUsername sets the "username" field if the given value is not nil.
+func (uc *UserCreate) SetNillableUsername(s *string) *UserCreate {
+	if s != nil {
+		uc.SetUsername(*s)
+	}
+	return uc
+}
+
+// SetIsVerified sets the "is_verified" field.
+func (uc *UserCreate) SetIsVerified(b bool) *UserCreate {
+	uc.mutation.SetIsVerified(b)
+	return uc
+}
+
+// SetNillableIsVerified sets the "is_verified" field if the given value is not nil.
+func (uc *UserCreate) SetNillableIsVerified(b *bool) *UserCreate {
+	if b != nil {
+		uc.SetIsVerified(*b)
+	}
 	return uc
 }
 
@@ -44,6 +81,30 @@ func (uc *UserCreate) SetNillableID(u *uuid.UUID) *UserCreate {
 		uc.SetID(*u)
 	}
 	return uc
+}
+
+// AddContactIDs adds the "contacts" edge to the Contact entity by IDs.
+func (uc *UserCreate) AddContactIDs(ids ...uuid.UUID) *UserCreate {
+	uc.mutation.AddContactIDs(ids...)
+	return uc
+}
+
+// AddContacts adds the "contacts" edges to the Contact entity.
+func (uc *UserCreate) AddContacts(c ...*Contact) *UserCreate {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uc.AddContactIDs(ids...)
+}
+
+// AddContact adds the "contact" edges to the Contact entity.
+func (uc *UserCreate) AddContact(c ...*Contact) *UserCreate {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uc.AddContactIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -81,6 +142,10 @@ func (uc *UserCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (uc *UserCreate) defaults() {
+	if _, ok := uc.mutation.IsVerified(); !ok {
+		v := user.DefaultIsVerified
+		uc.mutation.SetIsVerified(v)
+	}
 	if _, ok := uc.mutation.ID(); !ok {
 		v := user.DefaultID()
 		uc.mutation.SetID(v)
@@ -92,8 +157,8 @@ func (uc *UserCreate) check() error {
 	if _, ok := uc.mutation.PhoneNumber(); !ok {
 		return &ValidationError{Name: "phone_number", err: errors.New(`ent: missing required field "User.phone_number"`)}
 	}
-	if _, ok := uc.mutation.Name(); !ok {
-		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "User.name"`)}
+	if _, ok := uc.mutation.IsVerified(); !ok {
+		return &ValidationError{Name: "is_verified", err: errors.New(`ent: missing required field "User.is_verified"`)}
 	}
 	return nil
 }
@@ -134,9 +199,49 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		_spec.SetField(user.FieldPhoneNumber, field.TypeString, value)
 		_node.PhoneNumber = value
 	}
-	if value, ok := uc.mutation.Name(); ok {
-		_spec.SetField(user.FieldName, field.TypeString, value)
-		_node.Name = value
+	if value, ok := uc.mutation.Avatar(); ok {
+		_spec.SetField(user.FieldAvatar, field.TypeString, value)
+		_node.Avatar = value
+	}
+	if value, ok := uc.mutation.Username(); ok {
+		_spec.SetField(user.FieldUsername, field.TypeString, value)
+		_node.Username = value
+	}
+	if value, ok := uc.mutation.IsVerified(); ok {
+		_spec.SetField(user.FieldIsVerified, field.TypeBool, value)
+		_node.IsVerified = value
+	}
+	if nodes := uc.mutation.ContactsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ContactsTable,
+			Columns: []string{user.ContactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(contact.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.ContactIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.ContactTable,
+			Columns: []string{user.ContactColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(contact.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

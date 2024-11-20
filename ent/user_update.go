@@ -10,8 +10,10 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"example.com/boiletplate/ent/contact"
 	"example.com/boiletplate/ent/predicate"
 	"example.com/boiletplate/ent/user"
+	"github.com/google/uuid"
 )
 
 // UserUpdate is the builder for updating User entities.
@@ -41,23 +43,124 @@ func (uu *UserUpdate) SetNillablePhoneNumber(s *string) *UserUpdate {
 	return uu
 }
 
-// SetName sets the "name" field.
-func (uu *UserUpdate) SetName(s string) *UserUpdate {
-	uu.mutation.SetName(s)
+// SetAvatar sets the "avatar" field.
+func (uu *UserUpdate) SetAvatar(s string) *UserUpdate {
+	uu.mutation.SetAvatar(s)
 	return uu
 }
 
-// SetNillableName sets the "name" field if the given value is not nil.
-func (uu *UserUpdate) SetNillableName(s *string) *UserUpdate {
+// SetNillableAvatar sets the "avatar" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableAvatar(s *string) *UserUpdate {
 	if s != nil {
-		uu.SetName(*s)
+		uu.SetAvatar(*s)
 	}
 	return uu
+}
+
+// ClearAvatar clears the value of the "avatar" field.
+func (uu *UserUpdate) ClearAvatar() *UserUpdate {
+	uu.mutation.ClearAvatar()
+	return uu
+}
+
+// SetUsername sets the "username" field.
+func (uu *UserUpdate) SetUsername(s string) *UserUpdate {
+	uu.mutation.SetUsername(s)
+	return uu
+}
+
+// SetNillableUsername sets the "username" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableUsername(s *string) *UserUpdate {
+	if s != nil {
+		uu.SetUsername(*s)
+	}
+	return uu
+}
+
+// ClearUsername clears the value of the "username" field.
+func (uu *UserUpdate) ClearUsername() *UserUpdate {
+	uu.mutation.ClearUsername()
+	return uu
+}
+
+// SetIsVerified sets the "is_verified" field.
+func (uu *UserUpdate) SetIsVerified(b bool) *UserUpdate {
+	uu.mutation.SetIsVerified(b)
+	return uu
+}
+
+// SetNillableIsVerified sets the "is_verified" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableIsVerified(b *bool) *UserUpdate {
+	if b != nil {
+		uu.SetIsVerified(*b)
+	}
+	return uu
+}
+
+// AddContactIDs adds the "contacts" edge to the Contact entity by IDs.
+func (uu *UserUpdate) AddContactIDs(ids ...uuid.UUID) *UserUpdate {
+	uu.mutation.AddContactIDs(ids...)
+	return uu
+}
+
+// AddContacts adds the "contacts" edges to the Contact entity.
+func (uu *UserUpdate) AddContacts(c ...*Contact) *UserUpdate {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uu.AddContactIDs(ids...)
+}
+
+// AddContact adds the "contact" edges to the Contact entity.
+func (uu *UserUpdate) AddContact(c ...*Contact) *UserUpdate {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uu.AddContactIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
 func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
+}
+
+// ClearContacts clears all "contacts" edges to the Contact entity.
+func (uu *UserUpdate) ClearContacts() *UserUpdate {
+	uu.mutation.ClearContacts()
+	return uu
+}
+
+// RemoveContactIDs removes the "contacts" edge to Contact entities by IDs.
+func (uu *UserUpdate) RemoveContactIDs(ids ...uuid.UUID) *UserUpdate {
+	uu.mutation.RemoveContactIDs(ids...)
+	return uu
+}
+
+// RemoveContacts removes "contacts" edges to Contact entities.
+func (uu *UserUpdate) RemoveContacts(c ...*Contact) *UserUpdate {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uu.RemoveContactIDs(ids...)
+}
+
+// ClearContact clears all "contact" edges to the Contact entity.
+func (uu *UserUpdate) ClearContact() *UserUpdate {
+	uu.mutation.ClearContact()
+	return uu
+}
+
+
+// RemoveContact removes "contact" edges to Contact entities.
+func (uu *UserUpdate) RemoveContact(c ...*Contact) *UserUpdate {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uu.RemoveContactIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -99,8 +202,110 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := uu.mutation.PhoneNumber(); ok {
 		_spec.SetField(user.FieldPhoneNumber, field.TypeString, value)
 	}
-	if value, ok := uu.mutation.Name(); ok {
-		_spec.SetField(user.FieldName, field.TypeString, value)
+	if value, ok := uu.mutation.Avatar(); ok {
+		_spec.SetField(user.FieldAvatar, field.TypeString, value)
+	}
+	if uu.mutation.AvatarCleared() {
+		_spec.ClearField(user.FieldAvatar, field.TypeString)
+	}
+	if value, ok := uu.mutation.Username(); ok {
+		_spec.SetField(user.FieldUsername, field.TypeString, value)
+	}
+	if uu.mutation.UsernameCleared() {
+		_spec.ClearField(user.FieldUsername, field.TypeString)
+	}
+	if value, ok := uu.mutation.IsVerified(); ok {
+		_spec.SetField(user.FieldIsVerified, field.TypeBool, value)
+	}
+	if uu.mutation.ContactsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ContactsTable,
+			Columns: []string{user.ContactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(contact.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedContactsIDs(); len(nodes) > 0 && !uu.mutation.ContactsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ContactsTable,
+			Columns: []string{user.ContactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(contact.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.ContactsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ContactsTable,
+			Columns: []string{user.ContactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(contact.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uu.mutation.ContactCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.ContactTable,
+			Columns: []string{user.ContactColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(contact.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedContactIDs(); len(nodes) > 0 && !uu.mutation.ContactCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.ContactTable,
+			Columns: []string{user.ContactColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(contact.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.ContactIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.ContactTable,
+			Columns: []string{user.ContactColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(contact.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, uu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -136,23 +341,125 @@ func (uuo *UserUpdateOne) SetNillablePhoneNumber(s *string) *UserUpdateOne {
 	return uuo
 }
 
-// SetName sets the "name" field.
-func (uuo *UserUpdateOne) SetName(s string) *UserUpdateOne {
-	uuo.mutation.SetName(s)
+// SetAvatar sets the "avatar" field.
+func (uuo *UserUpdateOne) SetAvatar(s string) *UserUpdateOne {
+	uuo.mutation.SetAvatar(s)
 	return uuo
 }
 
-// SetNillableName sets the "name" field if the given value is not nil.
-func (uuo *UserUpdateOne) SetNillableName(s *string) *UserUpdateOne {
+// SetNillableAvatar sets the "avatar" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableAvatar(s *string) *UserUpdateOne {
 	if s != nil {
-		uuo.SetName(*s)
+		uuo.SetAvatar(*s)
 	}
 	return uuo
+}
+
+// ClearAvatar clears the value of the "avatar" field.
+func (uuo *UserUpdateOne) ClearAvatar() *UserUpdateOne {
+	uuo.mutation.ClearAvatar()
+	return uuo
+}
+
+// SetUsername sets the "username" field.
+func (uuo *UserUpdateOne) SetUsername(s string) *UserUpdateOne {
+	uuo.mutation.SetUsername(s)
+	return uuo
+}
+
+// SetNillableUsername sets the "username" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableUsername(s *string) *UserUpdateOne {
+	if s != nil {
+		uuo.SetUsername(*s)
+	}
+	return uuo
+}
+
+// ClearUsername clears the value of the "username" field.
+func (uuo *UserUpdateOne) ClearUsername() *UserUpdateOne {
+	uuo.mutation.ClearUsername()
+	return uuo
+}
+
+// SetIsVerified sets the "is_verified" field.
+func (uuo *UserUpdateOne) SetIsVerified(b bool) *UserUpdateOne {
+	uuo.mutation.SetIsVerified(b)
+	return uuo
+}
+
+// SetNillableIsVerified sets the "is_verified" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableIsVerified(b *bool) *UserUpdateOne {
+	if b != nil {
+		uuo.SetIsVerified(*b)
+	}
+	return uuo
+}
+
+// AddContactIDs adds the "contacts" edge to the Contact entity by IDs.
+func (uuo *UserUpdateOne) AddContactIDs(ids ...uuid.UUID) *UserUpdateOne {
+	uuo.mutation.AddContactIDs(ids...)
+	return uuo
+}
+
+// AddContacts adds the "contacts" edges to the Contact entity.
+func (uuo *UserUpdateOne) AddContacts(c ...*Contact) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uuo.AddContactIDs(ids...)
+}
+
+
+
+// AddContact adds the "contact" edges to the Contact entity.
+func (uuo *UserUpdateOne) AddContact(c ...*Contact) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uuo.AddContactIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
 func (uuo *UserUpdateOne) Mutation() *UserMutation {
 	return uuo.mutation
+}
+
+// ClearContacts clears all "contacts" edges to the Contact entity.
+func (uuo *UserUpdateOne) ClearContacts() *UserUpdateOne {
+	uuo.mutation.ClearContacts()
+	return uuo
+}
+
+// RemoveContactIDs removes the "contacts" edge to Contact entities by IDs.
+func (uuo *UserUpdateOne) RemoveContactIDs(ids ...uuid.UUID) *UserUpdateOne {
+	uuo.mutation.RemoveContactIDs(ids...)
+	return uuo
+}
+
+// RemoveContacts removes "contacts" edges to Contact entities.
+func (uuo *UserUpdateOne) RemoveContacts(c ...*Contact) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uuo.RemoveContactIDs(ids...)
+}
+
+// ClearContact clears all "contact" edges to the Contact entity.
+func (uuo *UserUpdateOne) ClearContact() *UserUpdateOne {
+	uuo.mutation.ClearContact()
+	return uuo
+}
+
+// RemoveContact removes "contact" edges to Contact entities.
+func (uuo *UserUpdateOne) RemoveContact(c ...*Contact) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uuo.RemoveContactIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -224,8 +531,110 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 	if value, ok := uuo.mutation.PhoneNumber(); ok {
 		_spec.SetField(user.FieldPhoneNumber, field.TypeString, value)
 	}
-	if value, ok := uuo.mutation.Name(); ok {
-		_spec.SetField(user.FieldName, field.TypeString, value)
+	if value, ok := uuo.mutation.Avatar(); ok {
+		_spec.SetField(user.FieldAvatar, field.TypeString, value)
+	}
+	if uuo.mutation.AvatarCleared() {
+		_spec.ClearField(user.FieldAvatar, field.TypeString)
+	}
+	if value, ok := uuo.mutation.Username(); ok {
+		_spec.SetField(user.FieldUsername, field.TypeString, value)
+	}
+	if uuo.mutation.UsernameCleared() {
+		_spec.ClearField(user.FieldUsername, field.TypeString)
+	}
+	if value, ok := uuo.mutation.IsVerified(); ok {
+		_spec.SetField(user.FieldIsVerified, field.TypeBool, value)
+	}
+	if uuo.mutation.ContactsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ContactsTable,
+			Columns: []string{user.ContactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(contact.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedContactsIDs(); len(nodes) > 0 && !uuo.mutation.ContactsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ContactsTable,
+			Columns: []string{user.ContactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(contact.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.ContactsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ContactsTable,
+			Columns: []string{user.ContactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(contact.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uuo.mutation.ContactCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.ContactTable,
+			Columns: []string{user.ContactColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(contact.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedContactIDs(); len(nodes) > 0 && !uuo.mutation.ContactCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.ContactTable,
+			Columns: []string{user.ContactColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(contact.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.ContactIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.ContactTable,
+			Columns: []string{user.ContactColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(contact.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &User{config: uuo.config}
 	_spec.Assign = _node.assignValues

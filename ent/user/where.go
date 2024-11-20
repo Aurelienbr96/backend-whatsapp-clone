@@ -4,6 +4,7 @@ package user
 
 import (
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"example.com/boiletplate/ent/predicate"
 	"github.com/google/uuid"
 )
@@ -58,9 +59,19 @@ func PhoneNumber(v string) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldPhoneNumber, v))
 }
 
-// Name applies equality check predicate on the "name" field. It's identical to NameEQ.
-func Name(v string) predicate.User {
-	return predicate.User(sql.FieldEQ(FieldName, v))
+// Avatar applies equality check predicate on the "avatar" field. It's identical to AvatarEQ.
+func Avatar(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldAvatar, v))
+}
+
+// Username applies equality check predicate on the "username" field. It's identical to UsernameEQ.
+func Username(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldUsername, v))
+}
+
+// IsVerified applies equality check predicate on the "is_verified" field. It's identical to IsVerifiedEQ.
+func IsVerified(v bool) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldIsVerified, v))
 }
 
 // PhoneNumberEQ applies the EQ predicate on the "phone_number" field.
@@ -128,69 +139,210 @@ func PhoneNumberContainsFold(v string) predicate.User {
 	return predicate.User(sql.FieldContainsFold(FieldPhoneNumber, v))
 }
 
-// NameEQ applies the EQ predicate on the "name" field.
-func NameEQ(v string) predicate.User {
-	return predicate.User(sql.FieldEQ(FieldName, v))
+// AvatarEQ applies the EQ predicate on the "avatar" field.
+func AvatarEQ(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldAvatar, v))
 }
 
-// NameNEQ applies the NEQ predicate on the "name" field.
-func NameNEQ(v string) predicate.User {
-	return predicate.User(sql.FieldNEQ(FieldName, v))
+// AvatarNEQ applies the NEQ predicate on the "avatar" field.
+func AvatarNEQ(v string) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldAvatar, v))
 }
 
-// NameIn applies the In predicate on the "name" field.
-func NameIn(vs ...string) predicate.User {
-	return predicate.User(sql.FieldIn(FieldName, vs...))
+// AvatarIn applies the In predicate on the "avatar" field.
+func AvatarIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldIn(FieldAvatar, vs...))
 }
 
-// NameNotIn applies the NotIn predicate on the "name" field.
-func NameNotIn(vs ...string) predicate.User {
-	return predicate.User(sql.FieldNotIn(FieldName, vs...))
+// AvatarNotIn applies the NotIn predicate on the "avatar" field.
+func AvatarNotIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldAvatar, vs...))
 }
 
-// NameGT applies the GT predicate on the "name" field.
-func NameGT(v string) predicate.User {
-	return predicate.User(sql.FieldGT(FieldName, v))
+// AvatarGT applies the GT predicate on the "avatar" field.
+func AvatarGT(v string) predicate.User {
+	return predicate.User(sql.FieldGT(FieldAvatar, v))
 }
 
-// NameGTE applies the GTE predicate on the "name" field.
-func NameGTE(v string) predicate.User {
-	return predicate.User(sql.FieldGTE(FieldName, v))
+// AvatarGTE applies the GTE predicate on the "avatar" field.
+func AvatarGTE(v string) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldAvatar, v))
 }
 
-// NameLT applies the LT predicate on the "name" field.
-func NameLT(v string) predicate.User {
-	return predicate.User(sql.FieldLT(FieldName, v))
+// AvatarLT applies the LT predicate on the "avatar" field.
+func AvatarLT(v string) predicate.User {
+	return predicate.User(sql.FieldLT(FieldAvatar, v))
 }
 
-// NameLTE applies the LTE predicate on the "name" field.
-func NameLTE(v string) predicate.User {
-	return predicate.User(sql.FieldLTE(FieldName, v))
+// AvatarLTE applies the LTE predicate on the "avatar" field.
+func AvatarLTE(v string) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldAvatar, v))
 }
 
-// NameContains applies the Contains predicate on the "name" field.
-func NameContains(v string) predicate.User {
-	return predicate.User(sql.FieldContains(FieldName, v))
+// AvatarContains applies the Contains predicate on the "avatar" field.
+func AvatarContains(v string) predicate.User {
+	return predicate.User(sql.FieldContains(FieldAvatar, v))
 }
 
-// NameHasPrefix applies the HasPrefix predicate on the "name" field.
-func NameHasPrefix(v string) predicate.User {
-	return predicate.User(sql.FieldHasPrefix(FieldName, v))
+// AvatarHasPrefix applies the HasPrefix predicate on the "avatar" field.
+func AvatarHasPrefix(v string) predicate.User {
+	return predicate.User(sql.FieldHasPrefix(FieldAvatar, v))
 }
 
-// NameHasSuffix applies the HasSuffix predicate on the "name" field.
-func NameHasSuffix(v string) predicate.User {
-	return predicate.User(sql.FieldHasSuffix(FieldName, v))
+// AvatarHasSuffix applies the HasSuffix predicate on the "avatar" field.
+func AvatarHasSuffix(v string) predicate.User {
+	return predicate.User(sql.FieldHasSuffix(FieldAvatar, v))
 }
 
-// NameEqualFold applies the EqualFold predicate on the "name" field.
-func NameEqualFold(v string) predicate.User {
-	return predicate.User(sql.FieldEqualFold(FieldName, v))
+// AvatarIsNil applies the IsNil predicate on the "avatar" field.
+func AvatarIsNil() predicate.User {
+	return predicate.User(sql.FieldIsNull(FieldAvatar))
 }
 
-// NameContainsFold applies the ContainsFold predicate on the "name" field.
-func NameContainsFold(v string) predicate.User {
-	return predicate.User(sql.FieldContainsFold(FieldName, v))
+// AvatarNotNil applies the NotNil predicate on the "avatar" field.
+func AvatarNotNil() predicate.User {
+	return predicate.User(sql.FieldNotNull(FieldAvatar))
+}
+
+// AvatarEqualFold applies the EqualFold predicate on the "avatar" field.
+func AvatarEqualFold(v string) predicate.User {
+	return predicate.User(sql.FieldEqualFold(FieldAvatar, v))
+}
+
+// AvatarContainsFold applies the ContainsFold predicate on the "avatar" field.
+func AvatarContainsFold(v string) predicate.User {
+	return predicate.User(sql.FieldContainsFold(FieldAvatar, v))
+}
+
+// UsernameEQ applies the EQ predicate on the "username" field.
+func UsernameEQ(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldUsername, v))
+}
+
+// UsernameNEQ applies the NEQ predicate on the "username" field.
+func UsernameNEQ(v string) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldUsername, v))
+}
+
+// UsernameIn applies the In predicate on the "username" field.
+func UsernameIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldIn(FieldUsername, vs...))
+}
+
+// UsernameNotIn applies the NotIn predicate on the "username" field.
+func UsernameNotIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldUsername, vs...))
+}
+
+// UsernameGT applies the GT predicate on the "username" field.
+func UsernameGT(v string) predicate.User {
+	return predicate.User(sql.FieldGT(FieldUsername, v))
+}
+
+// UsernameGTE applies the GTE predicate on the "username" field.
+func UsernameGTE(v string) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldUsername, v))
+}
+
+// UsernameLT applies the LT predicate on the "username" field.
+func UsernameLT(v string) predicate.User {
+	return predicate.User(sql.FieldLT(FieldUsername, v))
+}
+
+// UsernameLTE applies the LTE predicate on the "username" field.
+func UsernameLTE(v string) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldUsername, v))
+}
+
+// UsernameContains applies the Contains predicate on the "username" field.
+func UsernameContains(v string) predicate.User {
+	return predicate.User(sql.FieldContains(FieldUsername, v))
+}
+
+// UsernameHasPrefix applies the HasPrefix predicate on the "username" field.
+func UsernameHasPrefix(v string) predicate.User {
+	return predicate.User(sql.FieldHasPrefix(FieldUsername, v))
+}
+
+// UsernameHasSuffix applies the HasSuffix predicate on the "username" field.
+func UsernameHasSuffix(v string) predicate.User {
+	return predicate.User(sql.FieldHasSuffix(FieldUsername, v))
+}
+
+// UsernameIsNil applies the IsNil predicate on the "username" field.
+func UsernameIsNil() predicate.User {
+	return predicate.User(sql.FieldIsNull(FieldUsername))
+}
+
+// UsernameNotNil applies the NotNil predicate on the "username" field.
+func UsernameNotNil() predicate.User {
+	return predicate.User(sql.FieldNotNull(FieldUsername))
+}
+
+// UsernameEqualFold applies the EqualFold predicate on the "username" field.
+func UsernameEqualFold(v string) predicate.User {
+	return predicate.User(sql.FieldEqualFold(FieldUsername, v))
+}
+
+// UsernameContainsFold applies the ContainsFold predicate on the "username" field.
+func UsernameContainsFold(v string) predicate.User {
+	return predicate.User(sql.FieldContainsFold(FieldUsername, v))
+}
+
+// IsVerifiedEQ applies the EQ predicate on the "is_verified" field.
+func IsVerifiedEQ(v bool) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldIsVerified, v))
+}
+
+// IsVerifiedNEQ applies the NEQ predicate on the "is_verified" field.
+func IsVerifiedNEQ(v bool) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldIsVerified, v))
+}
+
+// HasContacts applies the HasEdge predicate on the "contacts" edge.
+func HasContacts() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ContactsTable, ContactsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasContactsWith applies the HasEdge predicate on the "contacts" edge with a given conditions (other predicates).
+func HasContactsWith(preds ...predicate.Contact) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newContactsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasContact applies the HasEdge predicate on the "contact" edge.
+func HasContact() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, ContactTable, ContactColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasContactWith applies the HasEdge predicate on the "contact" edge with a given conditions (other predicates).
+func HasContactWith(preds ...predicate.Contact) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newContactStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
 }
 
 // And groups predicates with the AND operator between them.

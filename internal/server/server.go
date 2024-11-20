@@ -21,7 +21,6 @@ func NewServer(entClient *ent.Client, rabbitMqClient *amqp091.Connection, twilio
 }
 
 func (s *Server) Bootstrap() {
-
 	twilioAdapter := otphandler.NewTwilioAdapter(s.twilioClient.Twilio, s.twilioClient.VerifyServiceSid)
 
 	consumer := queue.NewConsumer(s.rabbitMqClient, twilioAdapter)
@@ -29,6 +28,8 @@ func (s *Server) Bootstrap() {
 
 	publisher := queue.NewPublisher(s.rabbitMqClient)
 
-	NewHandlers(s, publisher)
+	NewHandlers(s, publisher, twilioAdapter)
+	s.gin.Use(gin.Logger())
+	s.gin.Use(gin.Recovery())
 	s.gin.Run()
 }

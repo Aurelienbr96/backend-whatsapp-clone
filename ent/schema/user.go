@@ -2,6 +2,7 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 )
@@ -16,10 +17,15 @@ func (User) Fields() []ent.Field {
 			Default(uuid.New).
 			Unique(),
 		field.String("phone_number").Unique(),
-		field.String("name"),
+		field.String("avatar").Optional(),
+		field.String("username").Optional(),
+		field.Bool("is_verified").Default(false),
 	}
 }
 
 func (User) Edges() []ent.Edge {
-	return []ent.Edge{}
+	return []ent.Edge{
+		edge.To("contacts", Contact.Type),
+		edge.From("contact", Contact.Type).Ref("contact_user"),
+	}
 }

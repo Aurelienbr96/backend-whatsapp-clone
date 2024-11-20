@@ -1,11 +1,20 @@
 package model
 
-type User struct {
-	PhoneNumber string `json:"phoneNumber" binding:"required"`
-	Name        string `json:"name" binding:"required"`
-}
-
 type UserWithId struct {
-	User
 	Id string `json:"id"`
 }
+
+/* type UserEntity struct {
+	id         string
+	userName   string
+	isVerified bool
+	avatar     string
+}
+
+func NewUser(id string, userName string, isVerified bool, avatar string) *UserEntity {
+	return &UserEntity{id: id, userName: userName, isVerified: isVerified, avatar: avatar}
+}
+
+func (u *UserEntity) CanLogIn() bool {
+	return u.isVerified
+} */

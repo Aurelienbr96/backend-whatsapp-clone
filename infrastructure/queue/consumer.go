@@ -73,7 +73,7 @@ func (c *Consumer) Subscribe() {
 				e.FailOnError(err, "Could not process the message")
 			}
 
-			if msg.Type == "created_user" {
+			if msg.Type == "created_user" && msg.Payload.PhoneNumber != "" {
 				c.otpHandler.SendOTP(msg.Payload.PhoneNumber)
 			}
 		}

@@ -1,6 +1,7 @@
-package contact
+package http
 
 import (
+	"example.com/boiletplate/internal/contact/repository"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -8,10 +9,10 @@ import (
 )
 
 type ContactController struct {
-	contactRepository *ContactRepository
+	contactRepository *repository.Repository
 }
 
-func NewContactController(contactRepository *ContactRepository) *ContactController {
+func NewContactController(contactRepository *repository.Repository) *ContactController {
 	return &ContactController{contactRepository: contactRepository}
 }
 

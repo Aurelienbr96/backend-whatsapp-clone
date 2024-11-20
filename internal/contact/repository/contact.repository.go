@@ -1,4 +1,4 @@
-package contact
+package repository
 
 import (
 	"context"
@@ -10,24 +10,23 @@ import (
 	"github.com/google/uuid"
 )
 
-type ContactRepository struct {
-	ctx    context.Context
+type Repository struct {
 	client *ent.Client
 }
 
-func NewContactRepository(ctx context.Context, client *ent.Client) *ContactRepository {
-	return &ContactRepository{ctx: ctx, client: client}
+func NewContactRepository(client *ent.Client) *Repository {
+	return &Repository{client: client}
 }
 
-func (r *ContactRepository) GetContactsByOwnerId(ownerId uuid.UUID) ([]*ent.Contact, error) {
+func (r *Repository) GetContactsByOwnerId(ownerId uuid.UUID) ([]*ent.Contact, error) {
 	u, err := r.client.Contact.Query().Where(contact.HasOwnerWith(user.IDEQ(ownerId))).WithContactUser(func(q *ent.UserQuery) {
 		q.Select(user.FieldUsername, user.FieldPhoneNumber, user.FieldAvatar, user.FieldUsername)
-	}).All(r.ctx)
+	}).All(context.Background())
 
 	return u, err
 }
 
-func (r *ContactRepository) CreateMany(contactIds []uuid.UUID, ownerId uuid.UUID) error {
+func (r *Repository) CreateMany(contactIds []uuid.UUID, ownerId uuid.UUID) error {
 	if len(contactIds) == 0 {
 		return fmt.Errorf("no contact IDs provided")
 	}
@@ -35,7 +34,7 @@ func (r *ContactRepository) CreateMany(contactIds []uuid.UUID, ownerId uuid.UUID
 	for _, c := range contactIds {
 		entContactCreate = append(entContactCreate, r.client.Contact.Create().SetContactUserID(c).SetOwnerID(ownerId))
 	}
-	if _, err := r.client.Contact.CreateBulk(entContactCreate...).Save(r.ctx); err != nil {
+	if _, err := r.client.Contact.CreateBulk(entContactCreate...).Save(context.Background()); err != nil {
 		return fmt.Errorf("failed to create contacts: %w", err)
 	}
 

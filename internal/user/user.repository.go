@@ -10,20 +10,18 @@ import (
 	"github.com/google/uuid"
 )
 
-type UserRepository struct {
-	ctx    context.Context
+type Repository struct {
 	client *ent.Client
 }
 
-func NewUserRepository(ctx context.Context, client *ent.Client) *UserRepository {
-	return &UserRepository{
-		ctx:    ctx,
+func NewUserRepository(client *ent.Client) *Repository {
+	return &Repository{
 		client: client,
 	}
 }
 
-func (uRepo *UserRepository) CreateUser(phone_number string) (*ent.User, error) {
-	u, err := uRepo.client.User.Create().SetPhoneNumber(phone_number).Save(uRepo.ctx)
+func (uRepo *Repository) CreateUser(phoneNumber string) (*ent.User, error) {
+	u, err := uRepo.client.User.Create().SetPhoneNumber(phoneNumber).Save(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("failed creating user: %w", err)
 	}
@@ -31,9 +29,9 @@ func (uRepo *UserRepository) CreateUser(phone_number string) (*ent.User, error) 
 	return u, nil
 }
 
-func (uRepo *UserRepository) GetOneById(id uuid.UUID) (*ent.User, error) {
+func (uRepo *Repository) GetOneById(id uuid.UUID) (*ent.User, error) {
 
-	u, err := uRepo.client.User.Query().Where(user.IDEQ(id)).First(uRepo.ctx)
+	u, err := uRepo.client.User.Query().Where(user.IDEQ(id)).First(context.Background())
 
 	if err != nil {
 		return nil, err
@@ -42,8 +40,8 @@ func (uRepo *UserRepository) GetOneById(id uuid.UUID) (*ent.User, error) {
 	return u, nil
 }
 
-func (uRepo *UserRepository) GetOneByUsername(username string) (*ent.User, error) {
-	u, err := uRepo.client.User.Query().Where(user.Username(username)).First(uRepo.ctx)
+func (uRepo *Repository) GetOneByUsername(username string) (*ent.User, error) {
+	u, err := uRepo.client.User.Query().Where(user.Username(username)).First(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -51,8 +49,8 @@ func (uRepo *UserRepository) GetOneByUsername(username string) (*ent.User, error
 	return u, nil
 }
 
-func (uRepo *UserRepository) GetOneByPhoneNumber(phoneNumber string) (*ent.User, error) {
-	u, err := uRepo.client.User.Query().Where(user.PhoneNumber(phoneNumber)).First(uRepo.ctx)
+func (uRepo *Repository) GetOneByPhoneNumber(phoneNumber string) (*ent.User, error) {
+	u, err := uRepo.client.User.Query().Where(user.PhoneNumber(phoneNumber)).First(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -60,8 +58,8 @@ func (uRepo *UserRepository) GetOneByPhoneNumber(phoneNumber string) (*ent.User,
 	return u, nil
 }
 
-func (uRepo *UserRepository) UpdateOne(id uuid.UUID, username string, phoneNumber string) (*ent.User, error) {
-	u, err := uRepo.client.User.UpdateOneID(id).SetUsername(username).SetPhoneNumber(phoneNumber).Save(uRepo.ctx)
+func (uRepo *Repository) UpdateOne(id uuid.UUID, username string, phoneNumber string) (*ent.User, error) {
+	u, err := uRepo.client.User.UpdateOneID(id).SetUsername(username).SetPhoneNumber(phoneNumber).Save(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -69,8 +67,8 @@ func (uRepo *UserRepository) UpdateOne(id uuid.UUID, username string, phoneNumbe
 	return u, nil
 }
 
-func (uRepo *UserRepository) UpdateOneVerifiedStatusById(id uuid.UUID, isVerified bool) (*ent.User, error) {
-	u, err := uRepo.client.User.UpdateOneID(id).SetIsVerified(isVerified).Save(uRepo.ctx)
+func (uRepo *Repository) UpdateOneVerifiedStatusById(id uuid.UUID, isVerified bool) (*ent.User, error) {
+	u, err := uRepo.client.User.UpdateOneID(id).SetIsVerified(isVerified).Save(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -78,8 +76,11 @@ func (uRepo *UserRepository) UpdateOneVerifiedStatusById(id uuid.UUID, isVerifie
 	return u, nil
 }
 
-func (uRepo *UserRepository) DeleteOne(id uuid.UUID) (uuid.UUID, error) {
+func (uRepo *Repository) DeleteOne(id uuid.UUID) (uuid.UUID, error) {
 
-	uRepo.client.User.DeleteOneID(id).Exec(uRepo.ctx)
+	err := uRepo.client.User.DeleteOneID(id).Exec(context.Background())
+	if err != nil {
+		return [16]byte{}, err
+	}
 	return id, nil
 }

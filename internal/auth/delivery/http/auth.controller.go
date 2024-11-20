@@ -1,27 +1,26 @@
-package auth
+package http
 
 import (
-	"fmt"
-	"net/http"
-
-	"example.com/boiletplate/ent"
 	otphandler "example.com/boiletplate/infrastructure/OTPHandler"
+	"example.com/boiletplate/internal/auth/service"
+	"example.com/boiletplate/internal/auth/usecase"
 	"example.com/boiletplate/internal/user"
-	"example.com/boiletplate/internal/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"net/http"
 )
 
 var ACCESS_TOKEN_SECRET = []byte("your_secret_key")
 var REFRESH_TOKEN_SECRET = []byte("your_secret_key")
 
 type AuthController struct {
-	uRepo      *user.UserRepository
-	otpHandler otphandler.OTPHandler
+	uRepo        *user.Repository
+	otpHandler   otphandler.OTPHandler
+	loginUseCase *usecase.LoginUserUseCase
 }
 
-func NewAuthController(uRepo *user.UserRepository, otpHandler otphandler.OTPHandler) *AuthController {
-	return &AuthController{uRepo: uRepo, otpHandler: otpHandler}
+func NewAuthController(uRepo *user.Repository, otpHandler otphandler.OTPHandler, loginUseCase *usecase.LoginUserUseCase) *AuthController {
+	return &AuthController{uRepo: uRepo, otpHandler: otpHandler, loginUseCase: loginUseCase}
 }
 
 type LoginDTO struct {
@@ -51,49 +50,16 @@ func (a *AuthController) Login(c *gin.Context) {
 		return
 	}
 
-	phoneNumber := utils.RemoveWhiteSpace(l.PhoneNumber)
-
-	fmt.Printf("phone number: %s", phoneNumber)
-
-	u, err := a.uRepo.GetOneByPhoneNumber(phoneNumber)
+	t, err := a.loginUseCase.Execute(l.PhoneNumber, l.Code)
 	if err != nil {
-		switch {
-		case ent.IsNotFound(err):
-			c.JSON(http.StatusNotFound, createGinError("user not found"))
-		}
+		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
 
-	err = a.otpHandler.VerififyOTP(phoneNumber, l.Code)
-	if err != nil {
-		c.JSON(http.StatusForbidden, createGinError("Incorrect code"))
-		return
-	}
+	service.SetAccessTokenCookie(c, t.AccessToken)
+	service.SetRefreshTokenCookie(c, t.RefreshToken)
 
-	if !u.IsVerified {
-		_, err := a.uRepo.UpdateOneVerifiedStatusById(u.ID, true)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, createGinError("could not update user status"))
-		}
-		return
-	}
-
-	accessToken, err := SignInAccessToken(u.ID, ACCESS_TOKEN_SECRET)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, createGinError("could not generate token"))
-		return
-	}
-
-	refreshToken, err := SignInRefreshToken(u.ID, ACCESS_TOKEN_SECRET)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, createGinError("could not generate token"))
-		return
-	}
-
-	SetAccessTokenCookie(c, accessToken)
-	SetRefreshTokenCookie(c, refreshToken)
-
-	c.JSON(http.StatusCreated, u)
+	c.JSON(http.StatusCreated, gin.H{"message": "You are logged in"})
 }
 
 // @Summary Logout User
@@ -162,7 +128,7 @@ func (a *AuthController) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	AuthPayload, err := ValidatingJWT(refreshToken, REFRESH_TOKEN_SECRET)
+	AuthPayload, err := service.ValidatingJWT(refreshToken, REFRESH_TOKEN_SECRET)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Could not validate refresh token"})
 		return
@@ -174,12 +140,12 @@ func (a *AuthController) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	accessToken, err := SignInAccessToken(uuidID, ACCESS_TOKEN_SECRET)
+	accessToken, err := service.SignInAccessToken(uuidID, ACCESS_TOKEN_SECRET)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Could not sign in access token"})
 		return
 	}
 
-	SetAccessTokenCookie(c, accessToken)
+	service.SetAccessTokenCookie(c, accessToken)
 	c.JSON(http.StatusCreated, gin.H{"message": "Refresh token successfully created"})
 }

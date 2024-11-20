@@ -1,6 +1,7 @@
-package auth
+package service
 
 import (
+	"example.com/boiletplate/internal/auth/model"
 	"fmt"
 	"time"
 
@@ -41,11 +42,7 @@ func SignInRefreshToken(uid uuid.UUID, jwtSecret []byte) (string, error) {
 	return tokenString, nil
 }
 
-type AuthPayload struct {
-	Sub string
-}
-
-func ValidatingJWT(tokenString string, jwtSecret []byte) (*AuthPayload, error) {
+func ValidatingJWT(tokenString string, jwtSecret []byte) (*model.AuthPayload, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -59,7 +56,7 @@ func ValidatingJWT(tokenString string, jwtSecret []byte) (*AuthPayload, error) {
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok {
-		authPayload := AuthPayload{Sub: claims["sub"].(string)}
+		authPayload := model.AuthPayload{Sub: claims["sub"].(string)}
 		return &authPayload, nil
 
 	} else {

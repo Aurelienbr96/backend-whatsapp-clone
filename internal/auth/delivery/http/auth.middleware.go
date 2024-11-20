@@ -1,6 +1,7 @@
-package auth
+package http
 
 import (
+	"example.com/boiletplate/internal/auth/service"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -16,7 +17,7 @@ func AuthGuard() gin.HandlerFunc {
 			return
 		}
 
-		authPayload, err := ValidatingJWT(tokenString, ACCESS_TOKEN_SECRET)
+		authPayload, err := service.ValidatingJWT(tokenString, ACCESS_TOKEN_SECRET)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			c.Abort()

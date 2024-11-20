@@ -1,25 +1,27 @@
-package user
+package http
 
 import (
 	"encoding/json"
+	"example.com/boiletplate/internal/contact/repository"
+	http2 "example.com/boiletplate/internal/user"
+	"example.com/boiletplate/internal/user/adapter"
 	"log"
 	"net/http"
 
 	"example.com/boiletplate/ent"
 	"example.com/boiletplate/infrastructure/queue"
-	"example.com/boiletplate/internal/contact"
 	"example.com/boiletplate/internal/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
 type UserController struct {
-	userRepository    *UserRepository
-	contactRepository *contact.ContactRepository
+	userRepository    *http2.Repository
+	contactRepository *repository.Repository
 	publisher         queue.IPublisher
 }
 
-func NewUserController(userRepository *UserRepository, publisher queue.IPublisher, contactRepository *contact.ContactRepository) *UserController {
+func NewUserController(userRepository *http2.Repository, publisher queue.IPublisher, contactRepository *repository.Repository) *UserController {
 	return &UserController{userRepository: userRepository, publisher: publisher, contactRepository: contactRepository}
 }
 
@@ -142,7 +144,7 @@ func (co *UserController) SyncContact(c *gin.Context) {
 // @Tags example
 // @Accept json
 // @Produce json
-// @Success 200 {object} model.UserWithId
+// @Success 200 {object} model.User
 // @Failure 400 {object} map[string]string "Bad Request"
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /user/me [get]
@@ -169,7 +171,9 @@ func (co *UserController) GetMe(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, u)
+	userLoggedIn := adapter.EntUserAdapter(u)
+
+	c.JSON(200, userLoggedIn)
 }
 
 // @Summary Get User
@@ -218,7 +222,7 @@ func (co *UserController) GetOneById(c *gin.Context) {
 func (co *UserController) GetOneByPhoneNumber(c *gin.Context) {
 	phoneNumber := c.Param("phoneNumber")
 
-	u, err := co.userRepository.GetOneByPhoneNumber(utils.RemoveWhiteSpace(phoneNumber))
+	entUser, err := co.userRepository.GetOneByPhoneNumber(utils.RemoveWhiteSpace(phoneNumber))
 	if err != nil {
 		switch {
 		case ent.IsNotFound(err):
@@ -226,13 +230,14 @@ func (co *UserController) GetOneByPhoneNumber(c *gin.Context) {
 		}
 		return
 	}
+	u := adapter.EntUserAdapter(entUser)
 
 	c.JSON(200, u)
 }
 
 type UserToUpdate struct {
 	PhoneNumber string `json:"phoneNumber" binding:"required"`
-	Name        string `json:"name" binding:"required"`
+	UserName    string `json:"userName" binding:"required"`
 }
 
 // @Summary Update User
@@ -266,8 +271,17 @@ func (co *UserController) UpdateOne(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	entUser, err := co.userRepository.GetOneByPhoneNumber(userToUpdate.PhoneNumber)
+	if err != nil {
+		switch {
+		case ent.IsNotFound(err):
+			c.JSON(http.StatusNotFound, "could not found this user")
+		}
+	}
+	user := adapter.EntUserAdapter(entUser)
+	user.RemovePhoneNumberWhiteSpace()
 
-	_, err = co.userRepository.UpdateOne(uuidID, userToUpdate.Name, utils.RemoveWhiteSpace(userToUpdate.PhoneNumber))
+	_, err = co.userRepository.UpdateOne(uuidID, user.UserName, user.PhoneNumber)
 	if err != nil {
 		switch {
 		case ent.IsNotFound(err):

@@ -1,11 +1,10 @@
 package http
 
 import (
-	"encoding/json"
 	"example.com/boiletplate/internal/contact/repository"
-	http2 "example.com/boiletplate/internal/user"
 	"example.com/boiletplate/internal/user/adapter"
-	"log"
+	user "example.com/boiletplate/internal/user/repository"
+	"example.com/boiletplate/internal/user/usecase"
 	"net/http"
 
 	"example.com/boiletplate/ent"
@@ -16,13 +15,21 @@ import (
 )
 
 type UserController struct {
-	userRepository    *http2.Repository
+	userRepository    *user.Repository
 	contactRepository *repository.Repository
 	publisher         queue.IPublisher
+	createUserUseCase *usecase.CreateUserUseCase
+	updateUserUseCase *usecase.UpdateUserUseCase
 }
 
-func NewUserController(userRepository *http2.Repository, publisher queue.IPublisher, contactRepository *repository.Repository) *UserController {
-	return &UserController{userRepository: userRepository, publisher: publisher, contactRepository: contactRepository}
+func NewUserController(userRepository *user.Repository, publisher queue.IPublisher, contactRepository *repository.Repository, createUserUseCase *usecase.CreateUserUseCase, updateUserUseCase *usecase.UpdateUserUseCase) *UserController {
+	return &UserController{
+		userRepository:    userRepository,
+		publisher:         publisher,
+		contactRepository: contactRepository,
+		createUserUseCase: createUserUseCase,
+		updateUserUseCase: updateUserUseCase,
+	}
 }
 
 type UserToCreate struct {
@@ -44,44 +51,27 @@ type UserToCreate struct {
 // @Router /user [post]
 func (co *UserController) CreateOne(c *gin.Context) {
 
-	user := UserToCreate{}
+	userToCreate := UserToCreate{}
 
 	if c.Request.ContentLength == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Request body cannot be empty"})
 		return
 	}
 
-	if err := c.ShouldBindJSON(&user); err != nil {
+	if err := c.ShouldBindJSON(&userToCreate); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	u, err := co.userRepository.CreateUser(utils.RemoveWhiteSpace(user.PhoneNumber))
+	createUserInput := usecase.Input{UserToCreate: usecase.UserToCreate(userToCreate)}
 
+	createdUser, err := co.createUserUseCase.Execute(createUserInput)
 	if err != nil {
-		switch {
-		case ent.IsConstraintError(err):
-			c.JSON(http.StatusConflict, gin.H{"message": "Phone number already used"})
-			return
-		}
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	msg := queue.CreatedUserSuccess{
-		Type:    "created_user",
-		Payload: u,
-	}
-
-	messageBytes, err := json.Marshal(msg)
-	if err != nil {
-		log.Fatalf("Failed to marshal message: %v", err)
-		return
-	}
-
-	co.publisher.PushMessage(messageBytes)
-
-	c.JSON(http.StatusCreated, u)
+	c.JSON(http.StatusCreated, createdUser)
 }
 
 type ContactsToSync struct {
@@ -271,17 +261,8 @@ func (co *UserController) UpdateOne(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	entUser, err := co.userRepository.GetOneByPhoneNumber(userToUpdate.PhoneNumber)
-	if err != nil {
-		switch {
-		case ent.IsNotFound(err):
-			c.JSON(http.StatusNotFound, "could not found this user")
-		}
-	}
-	user := adapter.EntUserAdapter(entUser)
-	user.RemovePhoneNumberWhiteSpace()
-
-	_, err = co.userRepository.UpdateOne(uuidID, user.UserName, user.PhoneNumber)
+	updateUserUseCaseInput := usecase.UpdateUserUseCaseInput{UserToUpdate: usecase.UserToUpdate{Id: uuidID, PhoneNumber: userToUpdate.PhoneNumber}}
+	_, err = co.updateUserUseCase.Execute(updateUserUseCaseInput)
 	if err != nil {
 		switch {
 		case ent.IsNotFound(err):

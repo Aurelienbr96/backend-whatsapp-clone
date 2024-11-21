@@ -2,26 +2,31 @@ package server
 
 import (
 	authHttp "example.com/boiletplate/internal/auth/delivery/http"
-	"example.com/boiletplate/internal/auth/usecase"
+	authUseCase "example.com/boiletplate/internal/auth/usecase"
 	contactHttp "example.com/boiletplate/internal/contact/delivery/http"
-	"example.com/boiletplate/internal/contact/repository"
+	cRepository "example.com/boiletplate/internal/contact/repository"
 	userHttp "example.com/boiletplate/internal/user/delivery/http"
+	"example.com/boiletplate/internal/user/repository"
+	userUseCase "example.com/boiletplate/internal/user/usecase"
 
 	"example.com/boiletplate/docs"
 	otphandler "example.com/boiletplate/infrastructure/OTPHandler"
 	"example.com/boiletplate/infrastructure/queue"
-	"example.com/boiletplate/internal/user"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func NewHandlers(s *Server, publisher *queue.Publisher, otpHandlers otphandler.OTPHandler) {
-	userRepository := user.NewUserRepository(s.entClient)
-	contactRepository := repository.NewContactRepository(s.entClient)
+	// repository
+	userRepository := repository.NewUserRepository(s.entClient)
+	contactRepository := cRepository.NewContactRepository(s.entClient)
 
-	loginUseCase := usecase.NewLoginUserUseCase(userRepository, otpHandlers)
-
-	userController := userHttp.NewUserController(userRepository, publisher, contactRepository)
+	// use cases
+	loginUseCase := authUseCase.NewLoginUserUseCase(userRepository, otpHandlers)
+	createUserUseCase := userUseCase.NewCreateUserUseCase(userRepository)
+	updateUserUseCase := userUseCase.NewUpdateUserUseCase(userRepository)
+	// controllers
+	userController := userHttp.NewUserController(userRepository, publisher, contactRepository, createUserUseCase, updateUserUseCase)
 	authController := authHttp.NewAuthController(userRepository, otpHandlers, loginUseCase)
 	contactController := contactHttp.NewContactController(contactRepository)
 

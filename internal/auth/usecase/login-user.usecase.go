@@ -5,8 +5,8 @@ import (
 	otphandler "example.com/boiletplate/infrastructure/OTPHandler"
 	"example.com/boiletplate/internal/auth/model"
 	"example.com/boiletplate/internal/auth/service"
-	"example.com/boiletplate/internal/user"
 	"example.com/boiletplate/internal/user/adapter"
+	"example.com/boiletplate/internal/user/repository"
 
 	"fmt"
 )
@@ -15,11 +15,11 @@ var ACCESS_TOKEN_SECRET = []byte("your_secret_key")
 var REFRESH_TOKEN_SECRET = []byte("your_secret_key")
 
 type LoginUserUseCase struct {
-	uRepo      *user.Repository
+	uRepo      *repository.Repository
 	otpHandler otphandler.OTPHandler
 }
 
-func NewLoginUserUseCase(uRepo *user.Repository, otpHandler otphandler.OTPHandler) *LoginUserUseCase {
+func NewLoginUserUseCase(uRepo *repository.Repository, otpHandler otphandler.OTPHandler) *LoginUserUseCase {
 	return &LoginUserUseCase{uRepo: uRepo, otpHandler: otpHandler}
 }
 

@@ -4,7 +4,7 @@ import (
 	otphandler "example.com/boiletplate/infrastructure/OTPHandler"
 	"example.com/boiletplate/internal/auth/service"
 	"example.com/boiletplate/internal/auth/usecase"
-	"example.com/boiletplate/internal/user"
+	"example.com/boiletplate/internal/user/repository"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"net/http"
@@ -14,12 +14,12 @@ var ACCESS_TOKEN_SECRET = []byte("your_secret_key")
 var REFRESH_TOKEN_SECRET = []byte("your_secret_key")
 
 type AuthController struct {
-	uRepo        *user.Repository
+	uRepo        *repository.Repository
 	otpHandler   otphandler.OTPHandler
 	loginUseCase *usecase.LoginUserUseCase
 }
 
-func NewAuthController(uRepo *user.Repository, otpHandler otphandler.OTPHandler, loginUseCase *usecase.LoginUserUseCase) *AuthController {
+func NewAuthController(uRepo *repository.Repository, otpHandler otphandler.OTPHandler, loginUseCase *usecase.LoginUserUseCase) *AuthController {
 	return &AuthController{uRepo: uRepo, otpHandler: otpHandler, loginUseCase: loginUseCase}
 }
 

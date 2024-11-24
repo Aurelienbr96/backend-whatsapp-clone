@@ -12,7 +12,8 @@ import (
 func NewRabbitMq(config *config.Config) (*amqp.Connection, error) {
 	var conn *amqp.Connection
 	var err error
-	connString := fmt.Sprintf("amqp://guest:guest@%s", config.RabbitMq.Servers)
+	fmt.Printf("rabbitmq: %v", config.RabbitMq.Servers)
+	connString := fmt.Sprintf("amqp://guest:guest@%s/", config.RabbitMq.Servers)
 	for i := 0; i < 10; i++ { // Retry up to 10 times
 		conn, err = amqp.Dial(connString)
 		if err == nil {

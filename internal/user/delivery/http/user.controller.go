@@ -1,6 +1,7 @@
 package http
 
 import (
+	"errors"
 	"example.com/boiletplate/internal/contact/repository"
 	"example.com/boiletplate/internal/user/adapter"
 	user "example.com/boiletplate/internal/user/repository"
@@ -15,20 +16,22 @@ import (
 )
 
 type UserController struct {
-	userRepository    *user.Repository
-	contactRepository *repository.Repository
-	publisher         queue.IPublisher
-	createUserUseCase *usecase.CreateUserUseCase
-	updateUserUseCase *usecase.UpdateUserUseCase
+	userRepository     *user.Repository
+	contactRepository  *repository.Repository
+	publisher          queue.IPublisher
+	createUserUseCase  *usecase.CreateUserUseCase
+	updateUserUseCase  *usecase.UpdateUserUseCase
+	syncContactUseCase *usecase.SyncContactUseCase
 }
 
-func NewUserController(userRepository *user.Repository, publisher queue.IPublisher, contactRepository *repository.Repository, createUserUseCase *usecase.CreateUserUseCase, updateUserUseCase *usecase.UpdateUserUseCase) *UserController {
+func NewUserController(userRepository *user.Repository, publisher queue.IPublisher, contactRepository *repository.Repository, createUserUseCase *usecase.CreateUserUseCase, updateUserUseCase *usecase.UpdateUserUseCase, syncContactUseCase *usecase.SyncContactUseCase) *UserController {
 	return &UserController{
-		userRepository:    userRepository,
-		publisher:         publisher,
-		contactRepository: contactRepository,
-		createUserUseCase: createUserUseCase,
-		updateUserUseCase: updateUserUseCase,
+		userRepository:     userRepository,
+		publisher:          publisher,
+		contactRepository:  contactRepository,
+		createUserUseCase:  createUserUseCase,
+		updateUserUseCase:  updateUserUseCase,
+		syncContactUseCase: syncContactUseCase,
 	}
 }
 
@@ -67,7 +70,14 @@ func (co *UserController) CreateOne(c *gin.Context) {
 
 	createdUser, err := co.createUserUseCase.Execute(createUserInput)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
+		switch {
+		case errors.Is(err, usecase.ErrPhoneNumberAlreadyUsed):
+			c.JSON(http.StatusConflict, gin.H{"message": usecase.ErrPhoneNumberAlreadyUsed.Error()})
+		case errors.Is(err, usecase.ErrInternalServer):
+			c.JSON(http.StatusInternalServerError, gin.H{"message": usecase.ErrInternalServer.Error()})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		}
 		return
 	}
 
@@ -75,8 +85,8 @@ func (co *UserController) CreateOne(c *gin.Context) {
 }
 
 type ContactsToSync struct {
-	ContactIds []string `json:"contactIds" binding:"required"`
-	OwnerId    string   `json:"ownerId" binding:"required"`
+	PhoneNumbers []string `json:"phoneNumbers" binding:"required"`
+	OwnerId      string   `json:"ownerId" binding:"required"`
 }
 
 // @Summary Sync contact
@@ -91,9 +101,6 @@ type ContactsToSync struct {
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /user/sync-contacts [post]
 func (co *UserController) SyncContact(c *gin.Context) {
-
-	// TODO get list of actual contact, delete/add new contacts
-
 	contacts := ContactsToSync{}
 
 	if c.Request.ContentLength == 0 {
@@ -106,24 +113,8 @@ func (co *UserController) SyncContact(c *gin.Context) {
 		return
 	}
 
-	var contactsUuid []uuid.UUID
-
-	ownedId, _ := uuid.Parse(contacts.OwnerId)
-
-	for _, id := range contacts.ContactIds {
-		uuidID, err := uuid.Parse(id)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, err.Error())
-			return
-		}
-		contactsUuid = append(contactsUuid, uuidID)
-	}
-
-	err := co.contactRepository.CreateMany(contactsUuid, ownedId)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
-	}
+	input := usecase.SyncContactUseCaseInput{OwnerId: contacts.OwnerId, PhoneNumbers: contacts.PhoneNumbers}
+	co.syncContactUseCase.Execute(input)
 
 	c.JSON(http.StatusCreated, gin.H{"message": "contacts synced successfully"})
 }

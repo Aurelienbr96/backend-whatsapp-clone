@@ -1,10 +1,10 @@
 package queue
 
 import (
-	"example.com/boiletplate/internal/user/model"
+	"example.com/boiletplate/internal/user/entity"
 )
 
 type CreatedUserSuccess struct {
-	Type    string      `json:"type"`
-	Payload *model.User `json:"payload"`
+	Type    string       `json:"type"`
+	Payload *entity.User `json:"payload"`
 }

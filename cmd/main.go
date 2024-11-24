@@ -1,12 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"log"
+
+	otphandler "example.com/boiletplate/infrastructure/OTPHandler"
+	"example.com/boiletplate/infrastructure/queue"
 
 	"example.com/boiletplate/config"
 	"example.com/boiletplate/pkg/db/postgres"
 	"example.com/boiletplate/pkg/db/rabbitmq"
-	twilio_client "example.com/boiletplate/pkg/otp_provider/twilio"
+	twilioclient "example.com/boiletplate/pkg/otp_provider/twilio"
 
 	"example.com/boiletplate/internal/errors"
 	"example.com/boiletplate/internal/server"
@@ -29,11 +33,20 @@ func main() {
 	errors.FailOnError(err, "Could not set connect to postgresql")
 	defer entClient.Close()
 
+	fmt.Println("Connected to postgres")
+
 	rabbitMqClient, err := rabbitmq.NewRabbitMq(config)
 	errors.FailOnError(err, "Could not set connect to rabbitmq")
 	defer rabbitMqClient.Close()
 
-	twilioClient := twilio_client.NewTwilioClient(config)
-	server := server.NewServer(entClient, rabbitMqClient, twilioClient)
-	server.Bootstrap()
+	twilioClient := twilioclient.NewTwilioClient(config)
+	twilioAdapter := otphandler.NewTwilioAdapter(twilioClient.Twilio, twilioClient.VerifyServiceSid)
+
+	consumer := queue.NewConsumer(rabbitMqClient, twilioAdapter)
+	go consumer.Subscribe()
+
+	publisher := queue.NewPublisher(rabbitMqClient)
+
+	s := server.NewServer(entClient, twilioAdapter, publisher)
+	s.Bootstrap()
 }

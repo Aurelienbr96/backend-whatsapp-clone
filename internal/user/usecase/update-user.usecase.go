@@ -3,7 +3,7 @@ package usecase
 import (
 	"example.com/boiletplate/ent"
 	"example.com/boiletplate/internal/user/adapter"
-	"example.com/boiletplate/internal/user/model"
+	"example.com/boiletplate/internal/user/entity"
 	"example.com/boiletplate/internal/user/repository"
 	"github.com/google/uuid"
 )
@@ -25,7 +25,7 @@ type UpdateUserUseCaseInput struct {
 	UserToUpdate UserToUpdate
 }
 
-func (u *UpdateUserUseCase) Execute(input UpdateUserUseCaseInput) (*model.User, error) {
+func (u *UpdateUserUseCase) Execute(input UpdateUserUseCaseInput) (*entity.User, error) {
 	entUser, err := u.userRepository.GetOneByPhoneNumber(input.UserToUpdate.PhoneNumber)
 	if err != nil {
 		switch {
@@ -33,9 +33,9 @@ func (u *UpdateUserUseCase) Execute(input UpdateUserUseCaseInput) (*model.User, 
 			return nil, err
 		}
 	}
-	user := adapter.EntUserAdapter(entUser)
-	user.RemovePhoneNumberWhiteSpace()
+	userToUpdate := adapter.EntUserAdapter(entUser)
+	userToUpdate.RemovePhoneNumberWhiteSpace()
 
-	_, err = u.userRepository.UpdateOne(user.Id, user.UserName, user.PhoneNumber)
-	return user, err
+	_, err = u.userRepository.UpdateOne(userToUpdate.Id, userToUpdate.UserName, userToUpdate.PhoneNumber)
+	return userToUpdate, err
 }

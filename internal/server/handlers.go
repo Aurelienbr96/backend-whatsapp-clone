@@ -16,7 +16,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func NewHandlers(s *Server, publisher *queue.Publisher, otpHandlers otphandler.OTPHandler) {
+func NewHandlers(s *Server, publisher queue.IPublisher, otpHandlers otphandler.OTPHandler) {
 	// repository
 	userRepository := repository.NewUserRepository(s.entClient)
 	contactRepository := cRepository.NewContactRepository(s.entClient)
@@ -25,18 +25,27 @@ func NewHandlers(s *Server, publisher *queue.Publisher, otpHandlers otphandler.O
 	loginUseCase := authUseCase.NewLoginUserUseCase(userRepository, otpHandlers)
 	createUserUseCase := userUseCase.NewCreateUserUseCase(userRepository)
 	updateUserUseCase := userUseCase.NewUpdateUserUseCase(userRepository)
+	syncContactsUseCase := userUseCase.NewSyncContactUseCase(contactRepository, userRepository)
+
 	// controllers
-	userController := userHttp.NewUserController(userRepository, publisher, contactRepository, createUserUseCase, updateUserUseCase)
+	userController := userHttp.NewUserController(
+		userRepository,
+		publisher,
+		contactRepository,
+		createUserUseCase,
+		updateUserUseCase,
+		syncContactsUseCase,
+	)
 	authController := authHttp.NewAuthController(userRepository, otpHandlers, loginUseCase)
 	contactController := contactHttp.NewContactController(contactRepository)
 
 	docs.SwaggerInfo.BasePath = "/api/v1"
 
-	v1 := s.gin.Group("/api/v1")
+	v1 := s.Gin.Group("/api/v1")
 
 	contactHttp.NewContactHandlers(v1, contactController)
 	userHttp.NewUserHandlers(v1, userController)
 	authHttp.NewAuthHandlers(v1, authController)
 
-	s.gin.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+	s.Gin.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 }

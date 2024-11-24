@@ -4,32 +4,31 @@ import (
 	"example.com/boiletplate/ent"
 	otphandler "example.com/boiletplate/infrastructure/OTPHandler"
 	"example.com/boiletplate/infrastructure/queue"
-	twilio_client "example.com/boiletplate/pkg/otp_provider/twilio"
 	"github.com/gin-gonic/gin"
-	"github.com/rabbitmq/amqp091-go"
 )
 
 type Server struct {
-	entClient      *ent.Client
-	rabbitMqClient *amqp091.Connection
-	twilioClient   *twilio_client.TwilioClient
-	gin            *gin.Engine
+	entClient  *ent.Client
+	otpHandler otphandler.OTPHandler
+	Gin        *gin.Engine
+	publisher  queue.IPublisher
 }
 
-func NewServer(entClient *ent.Client, rabbitMqClient *amqp091.Connection, twilioClient *twilio_client.TwilioClient) *Server {
-	return &Server{gin: gin.Default(), entClient: entClient, rabbitMqClient: rabbitMqClient, twilioClient: twilioClient}
+func NewServer(entClient *ent.Client, otpHandler otphandler.OTPHandler, publisher queue.IPublisher) *Server {
+	return &Server{
+		Gin:        gin.Default(),
+		entClient:  entClient,
+		otpHandler: otpHandler,
+		publisher:  publisher,
+	}
 }
 
 func (s *Server) Bootstrap() {
-	twilioAdapter := otphandler.NewTwilioAdapter(s.twilioClient.Twilio, s.twilioClient.VerifyServiceSid)
-
-	consumer := queue.NewConsumer(s.rabbitMqClient, twilioAdapter)
-	go consumer.Subscribe()
-
-	publisher := queue.NewPublisher(s.rabbitMqClient)
-
-	NewHandlers(s, publisher, twilioAdapter)
-	s.gin.Use(gin.Logger())
-	s.gin.Use(gin.Recovery())
-	s.gin.Run()
+	NewHandlers(s, s.publisher, s.otpHandler)
+	s.Gin.Use(gin.Logger())
+	s.Gin.Use(gin.Recovery())
+	err := s.Gin.Run()
+	if err != nil {
+		panic(err)
+	}
 }

@@ -38,7 +38,7 @@ func (l *LoginUserUseCase) Execute(phoneNumber string, code string) (*model.Auth
 
 	userToLogin := adapter.EntUserAdapter(u)
 
-	err = l.otpHandler.VerififyOTP(phoneNumber, code)
+	err = l.otpHandler.VerifyOTP(phoneNumber, code)
 	if err != nil {
 		return nil, fmt.Errorf("could not verify code")
 	}

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"example.com/boiletplate/internal/contact/model"
 	"fmt"
 
 	"example.com/boiletplate/ent"
@@ -18,12 +19,23 @@ func NewContactRepository(client *ent.Client) *Repository {
 	return &Repository{client: client}
 }
 
-func (r *Repository) GetContactsByOwnerId(ownerId uuid.UUID) ([]*ent.Contact, error) {
+func (r *Repository) GetContactsByOwnerId(ownerId uuid.UUID) ([]*model.Contact, error) {
 	u, err := r.client.Contact.Query().Where(contact.HasOwnerWith(user.IDEQ(ownerId))).WithContactUser(func(q *ent.UserQuery) {
 		q.Select(user.FieldUsername, user.FieldPhoneNumber, user.FieldAvatar, user.FieldUsername)
 	}).All(context.Background())
-
-	return u, err
+	if err != nil {
+		return nil, err
+	}
+	var contacts []*model.Contact
+	for _, c := range u {
+		contactModel := &model.Contact{
+			Avatar:   c.Edges.ContactUser.Avatar,
+			Username: c.Edges.ContactUser.Username,
+			ID:       c.Edges.ContactUser.ID.String(),
+		}
+		contacts = append(contacts, contactModel)
+	}
+	return contacts, err
 }
 
 func (r *Repository) CreateMany(contactIds []uuid.UUID, ownerId uuid.UUID) error {

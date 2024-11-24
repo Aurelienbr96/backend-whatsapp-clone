@@ -2,7 +2,7 @@ package queue
 
 import (
 	"context"
-	"log"
+	"github.com/stretchr/testify/mock"
 	"time"
 
 	e "example.com/boiletplate/internal/errors"
@@ -21,11 +21,20 @@ func NewPublisher(conn *amqp.Connection) *Publisher {
 	}
 }
 
-func (p Publisher) PushMessage(body []byte) {
+type MockPublisher struct {
+	mock.Mock
+}
+
+func (m *MockPublisher) PushMessage(body []byte) error {
+	args := m.Called(body)
+	return args.Error(0)
+}
+
+func (p Publisher) PushMessage(body []byte) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	p.ch.ExchangeDeclare(
+	err := p.ch.ExchangeDeclare(
 		"logs",   // name
 		"fanout", // type
 		true,     // durable
@@ -34,8 +43,11 @@ func (p Publisher) PushMessage(body []byte) {
 		false,    // no-wait
 		nil,      // arguments
 	)
+	if err != nil {
+		return err
+	}
 
-	err := p.ch.PublishWithContext(ctx,
+	err = p.ch.PublishWithContext(ctx,
 		"logs", // exchange
 		"",     // routing key
 		false,  // mandatory
@@ -45,7 +57,7 @@ func (p Publisher) PushMessage(body []byte) {
 			Body:        []byte(body),
 		})
 	if err != nil {
-		e.FailOnError(err, "Failed to push message to the queue")
+		return err
 	}
-	log.Printf(" [x] Sent %s", body)
+	return nil
 }

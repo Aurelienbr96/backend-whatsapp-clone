@@ -84,3 +84,8 @@ func (uRepo *Repository) DeleteOne(id uuid.UUID) (uuid.UUID, error) {
 	}
 	return id, nil
 }
+
+func (uRepo *Repository) FindManyByPhoneNumbers(phoneNumbers []string) ([]*ent.User, error) {
+	users, err := uRepo.client.User.Query().Where(user.PhoneNumberIn(phoneNumbers...)).All(context.Background())
+	return users, err
+}

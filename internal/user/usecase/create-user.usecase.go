@@ -11,11 +11,11 @@ import (
 
 type CreateUserUseCase struct {
 	userRepository IUserRepository
-	publisher      *queue.Publisher
+	publisher      queue.IPublisher
 }
 
-func NewCreateUserUseCase(userRepository IUserRepository) *CreateUserUseCase {
-	return &CreateUserUseCase{userRepository: userRepository}
+func NewCreateUserUseCase(userRepository IUserRepository, publisher queue.IPublisher) *CreateUserUseCase {
+	return &CreateUserUseCase{userRepository: userRepository, publisher: publisher}
 }
 
 type UserToCreate struct {
@@ -31,34 +31,31 @@ var (
 	ErrInternalServer         = errors.New("internal server error")
 )
 
-func (u *CreateUserUseCase) Execute(input Input) (entity.User, error) {
+func (u *CreateUserUseCase) Execute(input Input) (*entity.User, error) {
 	randomUUid := entity.GenerateRandomUUid()
-	userToCreate := entity.NewUser(randomUUid, input.UserToCreate.PhoneNumber, "", false, "")
+	userToCreate := entity.NewUser(randomUUid, "", input.UserToCreate.PhoneNumber, false, "")
 	userToCreate.RemovePhoneNumberWhiteSpace()
 	entUser, err := u.userRepository.CreateUser(userToCreate.PhoneNumber)
 
 	if err != nil {
 		switch {
 		case ent.IsConstraintError(err):
-			return entity.User{}, ErrPhoneNumberAlreadyUsed
+			return &entity.User{}, ErrPhoneNumberAlreadyUsed
 		default:
-			return entity.User{}, ErrInternalServer
+			return &entity.User{}, ErrInternalServer
 		}
 	}
 
 	createdUser := entity.NewUser(entUser.ID, entUser.Username, entUser.PhoneNumber, entUser.IsVerified, entUser.Avatar)
 
-	msg := queue.CreatedUserSuccess{
-		Type:    "created_user",
-		Payload: createdUser,
-	}
+	msg := queue.NewCreatedUserSuccessMessage(createdUser.PhoneNumber)
 
 	messageBytes, err := json.Marshal(msg)
 	if err != nil {
 		log.Fatalf("Failed to marshal message: %v", err)
-		return entity.User{}, ErrInternalServer
+		return &entity.User{}, ErrInternalServer
 	}
 
 	_ = u.publisher.PushMessage(messageBytes)
-	return entity.User{}, nil
+	return createdUser, nil
 }

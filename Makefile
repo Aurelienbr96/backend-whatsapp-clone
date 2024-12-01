@@ -39,5 +39,8 @@ swaggo:
 build-image:
 	docker build -t api-golang .
 
-run-test:
-	docker-compose -f docker-compose.test.yml up
+test:
+	ginkgo ./...
+
+test-watch:
+	ginkgo ./... watch

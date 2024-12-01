@@ -1,29 +1,57 @@
 package testing
 
 import (
+	"context"
 	"example.com/boiletplate/ent"
-	"example.com/boiletplate/ent/enttest"
-	"example.com/boiletplate/ent/migrate"
 	otphandler "example.com/boiletplate/infrastructure/OTPHandler"
-	"example.com/boiletplate/infrastructure/queue"
+	mock_queue "example.com/boiletplate/infrastructure/queue/mock"
 	"example.com/boiletplate/internal/server"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/golang/mock/gomock"
 	_ "github.com/mattn/go-sqlite3"
 	. "github.com/onsi/ginkgo/v2"
 )
 
-func NewTestServer(t FullGinkgoTInterface) *gin.Engine {
-	opts := []enttest.Option{
-		enttest.WithOptions(ent.Log(t.Log)),
-		enttest.WithMigrateOptions(migrate.WithGlobalUniqueID(true)),
-	}
-	client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1", opts...)
-	defer client.Close()
+type TestServer struct {
+	Gin       *gin.Engine
+	Client    *ent.Client
+	MockQueue *mock_queue.MockIPublisher
+}
 
+func NewTestServer(t FullGinkgoTInterface) *TestServer {
+	client, err := ent.Open("sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
+	if err != nil {
+		fmt.Println("Error opening connection to sqlite", err)
+		panic(err)
+	}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	if err := client.Schema.Create(context.Background()); err != nil {
+		t.Fatalf("failed creating schema resources: %v", err)
+	}
 	// Mock dependencies
+	// Initialize mocks
+	otpHandler := &otphandler.MockOTPHandler{}
+	mockPublisher := mock_queue.NewMockIPublisher(ctrl)
+
+	// Configure mock expectations if any
+
 	// Initialize server with mocked dependencies
-	srv := server.NewServer(client, &otphandler.MockOTPHandler{}, &queue.MockPublisher{})
-	server.NewHandlers(srv, &queue.MockPublisher{}, &otphandler.MockOTPHandler{}) // Initialize routes
-	testServer := srv.Gin
-	return testServer
+	srv := server.NewServer(client, otpHandler, mockPublisher)
+	server.NewHandlers(srv, mockPublisher, otpHandler) // Initialize routes
+
+	return &TestServer{
+		Gin:       srv.Gin,
+		Client:    client,
+		MockQueue: mockPublisher,
+	}
+}
+
+func (t *TestServer) CreateManyUsers(users []*UserFixture) {
+	var usersToCreate []*ent.UserCreate
+	for _, u := range users {
+		usersToCreate = append(usersToCreate, t.Client.User.Create().SetPhoneNumber(u.PhoneNumber))
+	}
+	t.Client.User.CreateBulk(usersToCreate...).Save(context.Background())
 }

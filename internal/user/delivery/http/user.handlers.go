@@ -10,12 +10,12 @@ func NewUserHandlers(v1 *gin.RouterGroup, userController *UserController) {
 	{
 		user.POST("/", userController.CreateOne)
 		user.POST("/sync-contacts", userController.SyncContact)
+		user.GET("/by-phone/:phoneNumber", userController.GetOneByPhoneNumber)
 	}
 	user.Use(http.AuthGuard())
 	{
 		user.GET("/:id", userController.GetOneById)
 		user.GET("/me", userController.GetMe)
-		user.GET("/by-phone/:phoneNumber", userController.GetOneById)
 		user.PUT("/:id", userController.UpdateOne)
 		user.DELETE("/:id", userController.DeleteOne)
 	}

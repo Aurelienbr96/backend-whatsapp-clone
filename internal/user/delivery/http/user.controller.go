@@ -9,7 +9,6 @@ import (
 	"net/http"
 
 	"example.com/boiletplate/ent"
-	"example.com/boiletplate/infrastructure/queue"
 	"example.com/boiletplate/internal/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -18,16 +17,14 @@ import (
 type UserController struct {
 	userRepository     *user.Repository
 	contactRepository  *repository.Repository
-	publisher          queue.IPublisher
 	createUserUseCase  *usecase.CreateUserUseCase
 	updateUserUseCase  *usecase.UpdateUserUseCase
 	syncContactUseCase *usecase.SyncContactUseCase
 }
 
-func NewUserController(userRepository *user.Repository, publisher queue.IPublisher, contactRepository *repository.Repository, createUserUseCase *usecase.CreateUserUseCase, updateUserUseCase *usecase.UpdateUserUseCase, syncContactUseCase *usecase.SyncContactUseCase) *UserController {
+func NewUserController(userRepository *user.Repository, contactRepository *repository.Repository, createUserUseCase *usecase.CreateUserUseCase, updateUserUseCase *usecase.UpdateUserUseCase, syncContactUseCase *usecase.SyncContactUseCase) *UserController {
 	return &UserController{
 		userRepository:     userRepository,
-		publisher:          publisher,
 		contactRepository:  contactRepository,
 		createUserUseCase:  createUserUseCase,
 		updateUserUseCase:  updateUserUseCase,
@@ -55,7 +52,6 @@ type UserToCreate struct {
 func (co *UserController) CreateOne(c *gin.Context) {
 
 	userToCreate := UserToCreate{}
-
 	if c.Request.ContentLength == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Request body cannot be empty"})
 		return
@@ -66,7 +62,11 @@ func (co *UserController) CreateOne(c *gin.Context) {
 		return
 	}
 
-	createUserInput := usecase.Input{UserToCreate: usecase.UserToCreate(userToCreate)}
+	createUserInput := usecase.Input{
+		UserToCreate: usecase.UserToCreate{
+			PhoneNumber: userToCreate.PhoneNumber,
+		},
+	}
 
 	createdUser, err := co.createUserUseCase.Execute(createUserInput)
 	if err != nil {

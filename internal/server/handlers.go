@@ -23,14 +23,13 @@ func NewHandlers(s *Server, publisher queue.IPublisher, otpHandlers otphandler.O
 
 	// use cases
 	loginUseCase := authUseCase.NewLoginUserUseCase(userRepository, otpHandlers)
-	createUserUseCase := userUseCase.NewCreateUserUseCase(userRepository)
+	createUserUseCase := userUseCase.NewCreateUserUseCase(userRepository, publisher)
 	updateUserUseCase := userUseCase.NewUpdateUserUseCase(userRepository)
 	syncContactsUseCase := userUseCase.NewSyncContactUseCase(contactRepository, userRepository)
 
 	// controllers
 	userController := userHttp.NewUserController(
 		userRepository,
-		publisher,
 		contactRepository,
 		createUserUseCase,
 		updateUserUseCase,

@@ -2,12 +2,18 @@ package queue
 
 import (
 	"context"
-	"github.com/stretchr/testify/mock"
+	"fmt"
 	"time"
 
 	e "example.com/boiletplate/internal/errors"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
+
+//go:generate mockgen -source=publisher.go -destination=mock/publisher.go
+
+type IPublisher interface {
+	PushMessage(body []byte) error
+}
 
 type Publisher struct {
 	ch *amqp.Channel
@@ -21,16 +27,12 @@ func NewPublisher(conn *amqp.Connection) *Publisher {
 	}
 }
 
-type MockPublisher struct {
-	mock.Mock
-}
-
-func (m *MockPublisher) PushMessage(body []byte) error {
-	args := m.Called(body)
-	return args.Error(0)
-}
-
 func (p Publisher) PushMessage(body []byte) error {
+	fmt.Println(
+		" [x] Sent %s",
+		body,
+	)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 

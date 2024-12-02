@@ -22,6 +22,8 @@ type Contact struct {
 	OwnerID uuid.UUID `json:"owner_id,omitempty"`
 	// ContactUserID holds the value of the "contact_user_id" field.
 	ContactUserID uuid.UUID `json:"contact_user_id,omitempty"`
+	// Name holds the value of the "name" field.
+	Name string `json:"name,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ContactQuery when eager-loading is set.
 	Edges        ContactEdges `json:"edges"`
@@ -66,6 +68,8 @@ func (*Contact) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case contact.FieldName:
+			values[i] = new(sql.NullString)
 		case contact.FieldID, contact.FieldOwnerID, contact.FieldContactUserID:
 			values[i] = new(uuid.UUID)
 		default:
@@ -100,6 +104,12 @@ func (c *Contact) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field contact_user_id", values[i])
 			} else if value != nil {
 				c.ContactUserID = *value
+			}
+		case contact.FieldName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field name", values[i])
+			} else if value.Valid {
+				c.Name = value.String
 			}
 		default:
 			c.selectValues.Set(columns[i], values[i])
@@ -152,6 +162,9 @@ func (c *Contact) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("contact_user_id=")
 	builder.WriteString(fmt.Sprintf("%v", c.ContactUserID))
+	builder.WriteString(", ")
+	builder.WriteString("name=")
+	builder.WriteString(c.Name)
 	builder.WriteByte(')')
 	return builder.String()
 }

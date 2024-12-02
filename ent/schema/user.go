@@ -26,6 +26,6 @@ func (User) Fields() []ent.Field {
 func (User) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("contacts", Contact.Type),
-		edge.From("contact", Contact.Type).Ref("contact_user"),
+		edge.From("contact", Contact.Type).Ref("contact_user").Field("contact_user_id"),
 	}
 }

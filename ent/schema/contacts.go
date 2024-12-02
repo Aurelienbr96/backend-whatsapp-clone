@@ -18,6 +18,7 @@ func (Contact) Fields() []ent.Field {
 		field.UUID("id", uuid.UUID{}).Unique().Default(uuid.New),
 		field.UUID("owner_id", uuid.UUID{}),
 		field.UUID("contact_user_id", uuid.UUID{}),
+		field.String("name").Optional(),
 	}
 }
 

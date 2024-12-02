@@ -33,6 +33,20 @@ func (cc *ContactCreate) SetContactUserID(u uuid.UUID) *ContactCreate {
 	return cc
 }
 
+// SetName sets the "name" field.
+func (cc *ContactCreate) SetName(s string) *ContactCreate {
+	cc.mutation.SetName(s)
+	return cc
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (cc *ContactCreate) SetNillableName(s *string) *ContactCreate {
+	if s != nil {
+		cc.SetName(*s)
+	}
+	return cc
+}
+
 // SetID sets the "id" field.
 func (cc *ContactCreate) SetID(u uuid.UUID) *ContactCreate {
 	cc.mutation.SetID(u)
@@ -146,6 +160,10 @@ func (cc *ContactCreate) createSpec() (*Contact, *sqlgraph.CreateSpec) {
 	if id, ok := cc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
+	}
+	if value, ok := cc.mutation.Name(); ok {
+		_spec.SetField(contact.FieldName, field.TypeString, value)
+		_node.Name = value
 	}
 	if nodes := cc.mutation.OwnerIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

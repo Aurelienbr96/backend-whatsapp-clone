@@ -17,6 +17,8 @@ const (
 	FieldOwnerID = "owner_id"
 	// FieldContactUserID holds the string denoting the contact_user_id field in the database.
 	FieldContactUserID = "contact_user_id"
+	// FieldName holds the string denoting the name field in the database.
+	FieldName = "name"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
 	// EdgeContactUser holds the string denoting the contact_user edge name in mutations.
@@ -44,6 +46,7 @@ var Columns = []string{
 	FieldID,
 	FieldOwnerID,
 	FieldContactUserID,
+	FieldName,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -77,6 +80,11 @@ func ByOwnerID(opts ...sql.OrderTermOption) OrderOption {
 // ByContactUserID orders the results by the contact_user_id field.
 func ByContactUserID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldContactUserID, opts...).ToFunc()
+}
+
+// ByName orders the results by the name field.
+func ByName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldName, opts...).ToFunc()
 }
 
 // ByOwnerField orders the results by owner field.

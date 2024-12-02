@@ -35,7 +35,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/auth.LoginDTO"
+                            "$ref": "#/definitions/http.LoginDTO"
                         }
                     }
                 ],
@@ -115,7 +115,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/auth.SendCodeDTO"
+                            "$ref": "#/definitions/http.SendCodeDTO"
                         }
                     }
                 ],
@@ -171,6 +171,55 @@ const docTemplate = `{
                 }
             }
         },
+        "/conversations": {
+            "get": {
+                "description": "Get list of conversations",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "example"
+                ],
+                "summary": "Get list of conversations",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Conversation"
+                        }
+                    }
+                }
+            }
+        },
+        "/message/{conversationId}": {
+            "get": {
+                "description": "Get conversation message",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "example"
+                ],
+                "summary": "Get conversation message",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Message"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/user": {
             "post": {
                 "description": "Create a new user",
@@ -191,7 +240,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/user.UserToCreate"
+                            "$ref": "#/definitions/http.UserToCreate"
                         }
                     }
                 ],
@@ -244,12 +293,6 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/model.UserWithId"
-                        }
-                    },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
@@ -285,7 +328,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.UserWithId"
+                            "$ref": "#/definitions/entity.User"
                         }
                     },
                     "400": {
@@ -326,7 +369,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/user.ContactsToSync"
+                            "$ref": "#/definitions/http.ContactsToSync"
                         }
                     }
                 ],
@@ -379,12 +422,6 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/model.UserWithId"
-                        }
-                    },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
@@ -421,7 +458,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/user.UserToUpdate"
+                            "$ref": "#/definitions/http.UserToUpdate"
                         }
                     },
                     {
@@ -515,7 +552,45 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "auth.LoginDTO": {
+        "entity.User": {
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isVerified": {
+                    "type": "boolean"
+                },
+                "phoneNumber": {
+                    "type": "string"
+                },
+                "userName": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.ContactsToSync": {
+            "type": "object",
+            "required": [
+                "ownerId",
+                "phoneNumbers"
+            ],
+            "properties": {
+                "ownerId": {
+                    "type": "string"
+                },
+                "phoneNumbers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "http.LoginDTO": {
             "type": "object",
             "required": [
                 "code",
@@ -530,7 +605,7 @@ const docTemplate = `{
                 }
             }
         },
-        "auth.SendCodeDTO": {
+        "http.SendCodeDTO": {
             "type": "object",
             "required": [
                 "phoneNumber"
@@ -541,54 +616,80 @@ const docTemplate = `{
                 }
             }
         },
-        "model.UserWithId": {
+        "http.UserToCreate": {
             "type": "object",
+            "required": [
+                "phoneNumber"
+            ],
             "properties": {
-                "id": {
+                "phoneNumber": {
                     "type": "string"
                 }
             }
         },
-        "user.ContactsToSync": {
+        "http.UserToUpdate": {
             "type": "object",
             "required": [
-                "contactIds",
-                "ownerId"
+                "phoneNumber",
+                "userName"
             ],
             "properties": {
-                "contactIds": {
+                "phoneNumber": {
+                    "type": "string"
+                },
+                "userName": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.Conversation": {
+            "type": "object",
+            "properties": {
+                "deleted_by": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
-                "ownerId": {
-                    "type": "string"
-                }
-            }
-        },
-        "user.UserToCreate": {
-            "type": "object",
-            "required": [
-                "phoneNumber"
-            ],
-            "properties": {
-                "phoneNumber": {
-                    "type": "string"
-                }
-            }
-        },
-        "user.UserToUpdate": {
-            "type": "object",
-            "required": [
-                "name",
-                "phoneNumber"
-            ],
-            "properties": {
-                "name": {
+                "id": {
                     "type": "string"
                 },
-                "phoneNumber": {
+                "last_msg": {
+                    "$ref": "#/definitions/model.Message"
+                },
+                "user_id": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "model.Message": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "conversationId": {
+                    "type": "string"
+                },
+                "deleted_by": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "read": {
+                    "type": "boolean"
+                },
+                "senderId": {
+                    "type": "string"
+                },
+                "sentAt": {
                     "type": "string"
                 }
             }

@@ -1,5 +1,30 @@
 definitions:
-  auth.LoginDTO:
+  entity.User:
+    properties:
+      avatar:
+        type: string
+      id:
+        type: string
+      isVerified:
+        type: boolean
+      phoneNumber:
+        type: string
+      userName:
+        type: string
+    type: object
+  http.ContactsToSync:
+    properties:
+      ownerId:
+        type: string
+      phoneNumbers:
+        items:
+          type: string
+        type: array
+    required:
+    - ownerId
+    - phoneNumbers
+    type: object
+  http.LoginDTO:
     properties:
       code:
         type: string
@@ -9,46 +34,63 @@ definitions:
     - code
     - phoneNumber
     type: object
-  auth.SendCodeDTO:
+  http.SendCodeDTO:
     properties:
       phoneNumber:
         type: string
     required:
     - phoneNumber
     type: object
-  model.UserWithId:
+  http.UserToCreate:
     properties:
-      id:
+      phoneNumber:
         type: string
+    required:
+    - phoneNumber
     type: object
-  user.ContactsToSync:
+  http.UserToUpdate:
     properties:
-      contactIds:
+      phoneNumber:
+        type: string
+      userName:
+        type: string
+    required:
+    - phoneNumber
+    - userName
+    type: object
+  model.Conversation:
+    properties:
+      deleted_by:
         items:
           type: string
         type: array
-      ownerId:
+      id:
         type: string
-    required:
-    - contactIds
-    - ownerId
+      last_msg:
+        $ref: '#/definitions/model.Message'
+      user_id:
+        items:
+          type: string
+        type: array
     type: object
-  user.UserToCreate:
+  model.Message:
     properties:
-      phoneNumber:
+      content:
         type: string
-    required:
-    - phoneNumber
-    type: object
-  user.UserToUpdate:
-    properties:
-      name:
+      conversationId:
         type: string
-      phoneNumber:
+      deleted_by:
+        items:
+          type: string
+        type: array
+      id:
         type: string
-    required:
-    - name
-    - phoneNumber
+      read:
+        type: boolean
+      senderId:
+        type: string
+      sentAt:
+        type: string
     type: object
 info:
   contact: {}
@@ -64,7 +106,7 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/auth.LoginDTO'
+          $ref: '#/definitions/http.LoginDTO'
       produces:
       - application/json
       responses:
@@ -116,7 +158,7 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/auth.SendCodeDTO'
+          $ref: '#/definitions/http.SendCodeDTO'
       produces:
       - application/json
       responses:
@@ -155,6 +197,38 @@ paths:
       summary: Get User's contacts
       tags:
       - example
+  /conversations:
+    get:
+      consumes:
+      - application/json
+      description: Get list of conversations
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Conversation'
+      summary: Get list of conversations
+      tags:
+      - example
+  /message/{conversationId}:
+    get:
+      consumes:
+      - application/json
+      description: Get conversation message
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Message'
+            type: array
+      summary: Get conversation message
+      tags:
+      - example
   /user:
     post:
       consumes:
@@ -166,7 +240,7 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/user.UserToCreate'
+          $ref: '#/definitions/http.UserToCreate'
       produces:
       - application/json
       responses:
@@ -239,10 +313,6 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.UserWithId'
         "400":
           description: Bad Request
           schema:
@@ -266,7 +336,7 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/user.UserToUpdate'
+          $ref: '#/definitions/http.UserToUpdate'
       - description: User ID
         example: '"123e4567-e89b-12d3-a456-426614174000"'
         in: path
@@ -308,10 +378,6 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.UserWithId'
         "400":
           description: Bad Request
           schema:
@@ -336,7 +402,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.UserWithId'
+            $ref: '#/definitions/entity.User'
         "400":
           description: Bad Request
           schema:
@@ -361,7 +427,7 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/user.ContactsToSync'
+          $ref: '#/definitions/http.ContactsToSync'
       produces:
       - application/json
       responses:

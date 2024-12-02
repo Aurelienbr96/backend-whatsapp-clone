@@ -97,12 +97,6 @@ func (uu *UserUpdate) SetNillableIsVerified(b *bool) *UserUpdate {
 	return uu
 }
 
-// AddContactIDs adds the "contacts" edge to the Contact entity by IDs.
-func (uu *UserUpdate) AddContactIDs(ids ...uuid.UUID) *UserUpdate {
-	uu.mutation.AddContactIDs(ids...)
-	return uu
-}
-
 // AddContacts adds the "contacts" edges to the Contact entity.
 func (uu *UserUpdate) AddContacts(c ...*Contact) *UserUpdate {
 	ids := make([]uuid.UUID, len(c))
@@ -110,6 +104,12 @@ func (uu *UserUpdate) AddContacts(c ...*Contact) *UserUpdate {
 		ids[i] = c[i].ID
 	}
 	return uu.AddContactIDs(ids...)
+}
+
+// AddContactIDs adds the "contact" edge to the Contact entity by IDs.
+func (uu *UserUpdate) AddContactIDs(ids ...uuid.UUID) *UserUpdate {
+	uu.mutation.AddContactIDs(ids...)
+	return uu
 }
 
 // AddContact adds the "contact" edges to the Contact entity.
@@ -132,12 +132,6 @@ func (uu *UserUpdate) ClearContacts() *UserUpdate {
 	return uu
 }
 
-// RemoveContactIDs removes the "contacts" edge to Contact entities by IDs.
-func (uu *UserUpdate) RemoveContactIDs(ids ...uuid.UUID) *UserUpdate {
-	uu.mutation.RemoveContactIDs(ids...)
-	return uu
-}
-
 // RemoveContacts removes "contacts" edges to Contact entities.
 func (uu *UserUpdate) RemoveContacts(c ...*Contact) *UserUpdate {
 	ids := make([]uuid.UUID, len(c))
@@ -153,6 +147,11 @@ func (uu *UserUpdate) ClearContact() *UserUpdate {
 	return uu
 }
 
+// RemoveContactIDs removes the "contact" edge to Contact entities by IDs.
+func (uu *UserUpdate) RemoveContactIDs(ids ...uuid.UUID) *UserUpdate {
+	uu.mutation.RemoveContactIDs(ids...)
+	return uu
+}
 
 // RemoveContact removes "contact" edges to Contact entities.
 func (uu *UserUpdate) RemoveContact(c ...*Contact) *UserUpdate {
@@ -395,12 +394,6 @@ func (uuo *UserUpdateOne) SetNillableIsVerified(b *bool) *UserUpdateOne {
 	return uuo
 }
 
-// AddContactIDs adds the "contacts" edge to the Contact entity by IDs.
-func (uuo *UserUpdateOne) AddContactIDs(ids ...uuid.UUID) *UserUpdateOne {
-	uuo.mutation.AddContactIDs(ids...)
-	return uuo
-}
-
 // AddContacts adds the "contacts" edges to the Contact entity.
 func (uuo *UserUpdateOne) AddContacts(c ...*Contact) *UserUpdateOne {
 	ids := make([]uuid.UUID, len(c))
@@ -410,7 +403,11 @@ func (uuo *UserUpdateOne) AddContacts(c ...*Contact) *UserUpdateOne {
 	return uuo.AddContactIDs(ids...)
 }
 
-
+// AddContactIDs adds the "contact" edge to the Contact entity by IDs.
+func (uuo *UserUpdateOne) AddContactIDs(ids ...uuid.UUID) *UserUpdateOne {
+	uuo.mutation.AddContactIDs(ids...)
+	return uuo
+}
 
 // AddContact adds the "contact" edges to the Contact entity.
 func (uuo *UserUpdateOne) AddContact(c ...*Contact) *UserUpdateOne {

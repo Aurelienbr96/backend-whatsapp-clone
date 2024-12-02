@@ -57,6 +57,26 @@ func (cu *ContactUpdate) SetNillableContactUserID(u *uuid.UUID) *ContactUpdate {
 	return cu
 }
 
+// SetName sets the "name" field.
+func (cu *ContactUpdate) SetName(s string) *ContactUpdate {
+	cu.mutation.SetName(s)
+	return cu
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (cu *ContactUpdate) SetNillableName(s *string) *ContactUpdate {
+	if s != nil {
+		cu.SetName(*s)
+	}
+	return cu
+}
+
+// ClearName clears the value of the "name" field.
+func (cu *ContactUpdate) ClearName() *ContactUpdate {
+	cu.mutation.ClearName()
+	return cu
+}
+
 // SetOwner sets the "owner" edge to the User entity.
 func (cu *ContactUpdate) SetOwner(u *User) *ContactUpdate {
 	return cu.SetOwnerID(u.ID)
@@ -133,6 +153,12 @@ func (cu *ContactUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := cu.mutation.Name(); ok {
+		_spec.SetField(contact.FieldName, field.TypeString, value)
+	}
+	if cu.mutation.NameCleared() {
+		_spec.ClearField(contact.FieldName, field.TypeString)
 	}
 	if cu.mutation.OwnerCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -237,6 +263,26 @@ func (cuo *ContactUpdateOne) SetNillableContactUserID(u *uuid.UUID) *ContactUpda
 	if u != nil {
 		cuo.SetContactUserID(*u)
 	}
+	return cuo
+}
+
+// SetName sets the "name" field.
+func (cuo *ContactUpdateOne) SetName(s string) *ContactUpdateOne {
+	cuo.mutation.SetName(s)
+	return cuo
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (cuo *ContactUpdateOne) SetNillableName(s *string) *ContactUpdateOne {
+	if s != nil {
+		cuo.SetName(*s)
+	}
+	return cuo
+}
+
+// ClearName clears the value of the "name" field.
+func (cuo *ContactUpdateOne) ClearName() *ContactUpdateOne {
+	cuo.mutation.ClearName()
 	return cuo
 }
 
@@ -346,6 +392,12 @@ func (cuo *ContactUpdateOne) sqlSave(ctx context.Context) (_node *Contact, err e
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := cuo.mutation.Name(); ok {
+		_spec.SetField(contact.FieldName, field.TypeString, value)
+	}
+	if cuo.mutation.NameCleared() {
+		_spec.ClearField(contact.FieldName, field.TypeString)
 	}
 	if cuo.mutation.OwnerCleared() {
 		edge := &sqlgraph.EdgeSpec{

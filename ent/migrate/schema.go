@@ -11,6 +11,7 @@ var (
 	// ContactsColumns holds the columns for the "contacts" table.
 	ContactsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "name", Type: field.TypeString, Nullable: true},
 		{Name: "contact_user_id", Type: field.TypeUUID},
 		{Name: "owner_id", Type: field.TypeUUID},
 	}
@@ -22,13 +23,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "contacts_users_contact_user",
-				Columns:    []*schema.Column{ContactsColumns[1]},
+				Columns:    []*schema.Column{ContactsColumns[2]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "contacts_users_contacts",
-				Columns:    []*schema.Column{ContactsColumns[2]},
+				Columns:    []*schema.Column{ContactsColumns[3]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -37,7 +38,7 @@ var (
 			{
 				Name:    "contact_owner_id_contact_user_id",
 				Unique:  true,
-				Columns: []*schema.Column{ContactsColumns[2], ContactsColumns[1]},
+				Columns: []*schema.Column{ContactsColumns[3], ContactsColumns[2]},
 			},
 		},
 	}

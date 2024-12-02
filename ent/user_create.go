@@ -98,6 +98,8 @@ func (uc *UserCreate) AddContacts(c ...*Contact) *UserCreate {
 	return uc.AddContactIDs(ids...)
 }
 
+
+
 // AddContact adds the "contact" edges to the Contact entity.
 func (uc *UserCreate) AddContact(c ...*Contact) *UserCreate {
 	ids := make([]uuid.UUID, len(c))

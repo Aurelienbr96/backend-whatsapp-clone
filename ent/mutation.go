@@ -35,6 +35,7 @@ type ContactMutation struct {
 	op                  Op
 	typ                 string
 	id                  *uuid.UUID
+	name                *string
 	clearedFields       map[string]struct{}
 	owner               *uuid.UUID
 	clearedowner        bool
@@ -221,6 +222,55 @@ func (m *ContactMutation) ResetContactUserID() {
 	m.contact_user = nil
 }
 
+// SetName sets the "name" field.
+func (m *ContactMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *ContactMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the Contact entity.
+// If the Contact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ContactMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ClearName clears the value of the "name" field.
+func (m *ContactMutation) ClearName() {
+	m.name = nil
+	m.clearedFields[contact.FieldName] = struct{}{}
+}
+
+// NameCleared returns if the "name" field was cleared in this mutation.
+func (m *ContactMutation) NameCleared() bool {
+	_, ok := m.clearedFields[contact.FieldName]
+	return ok
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *ContactMutation) ResetName() {
+	m.name = nil
+	delete(m.clearedFields, contact.FieldName)
+}
+
 // ClearOwner clears the "owner" edge to the User entity.
 func (m *ContactMutation) ClearOwner() {
 	m.clearedowner = true
@@ -309,12 +359,15 @@ func (m *ContactMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ContactMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 3)
 	if m.owner != nil {
 		fields = append(fields, contact.FieldOwnerID)
 	}
 	if m.contact_user != nil {
 		fields = append(fields, contact.FieldContactUserID)
+	}
+	if m.name != nil {
+		fields = append(fields, contact.FieldName)
 	}
 	return fields
 }
@@ -328,6 +381,8 @@ func (m *ContactMutation) Field(name string) (ent.Value, bool) {
 		return m.OwnerID()
 	case contact.FieldContactUserID:
 		return m.ContactUserID()
+	case contact.FieldName:
+		return m.Name()
 	}
 	return nil, false
 }
@@ -341,6 +396,8 @@ func (m *ContactMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldOwnerID(ctx)
 	case contact.FieldContactUserID:
 		return m.OldContactUserID(ctx)
+	case contact.FieldName:
+		return m.OldName(ctx)
 	}
 	return nil, fmt.Errorf("unknown Contact field %s", name)
 }
@@ -363,6 +420,13 @@ func (m *ContactMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetContactUserID(v)
+		return nil
+	case contact.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Contact field %s", name)
@@ -393,7 +457,11 @@ func (m *ContactMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *ContactMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(contact.FieldName) {
+		fields = append(fields, contact.FieldName)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -406,6 +474,11 @@ func (m *ContactMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *ContactMutation) ClearField(name string) error {
+	switch name {
+	case contact.FieldName:
+		m.ClearName()
+		return nil
+	}
 	return fmt.Errorf("unknown Contact nullable field %s", name)
 }
 
@@ -418,6 +491,9 @@ func (m *ContactMutation) ResetField(name string) error {
 		return nil
 	case contact.FieldContactUserID:
 		m.ResetContactUserID()
+		return nil
+	case contact.FieldName:
+		m.ResetName()
 		return nil
 	}
 	return fmt.Errorf("unknown Contact field %s", name)
@@ -811,16 +887,6 @@ func (m *UserMutation) ResetIsVerified() {
 	m.is_verified = nil
 }
 
-// AddContactIDs adds the "contacts" edge to the Contact entity by ids.
-func (m *UserMutation) AddContactIDs(ids ...uuid.UUID) {
-	if m.contacts == nil {
-		m.contacts = make(map[uuid.UUID]struct{})
-	}
-	for i := range ids {
-		m.contacts[ids[i]] = struct{}{}
-	}
-}
-
 // ClearContacts clears the "contacts" edge to the Contact entity.
 func (m *UserMutation) ClearContacts() {
 	m.clearedcontacts = true
@@ -831,16 +897,6 @@ func (m *UserMutation) ContactsCleared() bool {
 	return m.clearedcontacts
 }
 
-// RemoveContactIDs removes the "contacts" edge to the Contact entity by IDs.
-func (m *UserMutation) RemoveContactIDs(ids ...uuid.UUID) {
-	if m.removedcontacts == nil {
-		m.removedcontacts = make(map[uuid.UUID]struct{})
-	}
-	for i := range ids {
-		delete(m.contacts, ids[i])
-		m.removedcontacts[ids[i]] = struct{}{}
-	}
-}
 
 // RemovedContacts returns the removed IDs of the "contacts" edge to the Contact entity.
 func (m *UserMutation) RemovedContactsIDs() (ids []uuid.UUID) {
@@ -865,6 +921,16 @@ func (m *UserMutation) ResetContacts() {
 	m.removedcontacts = nil
 }
 
+// AddContactIDs adds the "contact" edge to the Contact entity by ids.
+func (m *UserMutation) AddContactIDs(ids ...uuid.UUID) {
+	if m.contact == nil {
+		m.contact = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.contact[ids[i]] = struct{}{}
+	}
+}
+
 // ClearContact clears the "contact" edge to the Contact entity.
 func (m *UserMutation) ClearContact() {
 	m.clearedcontact = true
@@ -875,7 +941,16 @@ func (m *UserMutation) ContactCleared() bool {
 	return m.clearedcontact
 }
 
-
+// RemoveContactIDs removes the "contact" edge to the Contact entity by IDs.
+func (m *UserMutation) RemoveContactIDs(ids ...uuid.UUID) {
+	if m.removedcontact == nil {
+		m.removedcontact = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.contact, ids[i])
+		m.removedcontact[ids[i]] = struct{}{}
+	}
+}
 
 // RemovedContact returns the removed IDs of the "contact" edge to the Contact entity.
 func (m *UserMutation) RemovedContactIDs() (ids []uuid.UUID) {

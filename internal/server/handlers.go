@@ -5,6 +5,7 @@ import (
 	authUseCase "example.com/boiletplate/internal/auth/usecase"
 	contactHttp "example.com/boiletplate/internal/contact/delivery/http"
 	cRepository "example.com/boiletplate/internal/contact/repository"
+	conversationHttp "example.com/boiletplate/internal/conversations/delivery/http"
 	userHttp "example.com/boiletplate/internal/user/delivery/http"
 	"example.com/boiletplate/internal/user/repository"
 	userUseCase "example.com/boiletplate/internal/user/usecase"
@@ -37,6 +38,7 @@ func NewHandlers(s *Server, publisher queue.IPublisher, otpHandlers otphandler.O
 	)
 	authController := authHttp.NewAuthController(userRepository, otpHandlers, loginUseCase)
 	contactController := contactHttp.NewContactController(contactRepository)
+	conversationController := conversationHttp.NewMessageController()
 
 	docs.SwaggerInfo.BasePath = "/api/v1"
 
@@ -45,6 +47,10 @@ func NewHandlers(s *Server, publisher queue.IPublisher, otpHandlers otphandler.O
 	contactHttp.NewContactHandlers(v1, contactController)
 	userHttp.NewUserHandlers(v1, userController)
 	authHttp.NewAuthHandlers(v1, authController)
+	conversationHttp.NewConversationHandlers(v1, conversationController)
+
+	docs.SwaggerInfo.Host = "localhost:8080"
+	docs.SwaggerInfo.Title = "Boilerplate API"
 
 	s.Gin.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 }

@@ -125,7 +125,7 @@ func (co *UserController) SyncContact(c *gin.Context) {
 // @Tags example
 // @Accept json
 // @Produce json
-// @Success 200 {object} model.User
+// @Success 200 {object} entity.User
 // @Failure 400 {object} map[string]string "Bad Request"
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /user/me [get]
@@ -164,7 +164,6 @@ func (co *UserController) GetMe(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path string true "User ID" example("123e4567-e89b-12d3-a456-426614174000")
-// @Success 200 {object} model.UserWithId
 // @Failure 400 {object} map[string]string "Bad Request"
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /user/{id} [get]
@@ -196,7 +195,6 @@ func (co *UserController) GetOneById(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path string true "User ID" example("+33602222632")
-// @Success 200 {object} model.UserWithId
 // @Failure 400 {object} map[string]string "Bad Request"
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /user/by-phone/{phoneNumber} [get]

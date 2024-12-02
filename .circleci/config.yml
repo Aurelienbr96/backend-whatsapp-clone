@@ -11,6 +11,9 @@ jobs:
       - restore_cache:
           key: go-mod-{{ checksum "go.sum" }}
       - run:
+          name: Install ginkgo
+          command: go install github.com/onsi/ginkgo/v2/ginkgo@latest
+      - run:
           name: Download Go modules
           command: go mod download
       - run:

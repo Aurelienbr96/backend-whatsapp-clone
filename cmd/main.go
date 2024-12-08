@@ -1,6 +1,7 @@
 package main
 
 import (
+	"example.com/boiletplate/infrastructure/upload-blob/adapter"
 	"fmt"
 	"log"
 
@@ -32,8 +33,11 @@ func main() {
 	log.Printf("ent client: %v", entClient)
 	errors.FailOnError(err, "Could not set connect to postgresql")
 	defer entClient.Close()
-
 	fmt.Println("Connected to postgres")
+
+	blobStorageHandler, err := adapter.NewAzureBlobAdapter(config)
+	errors.FailOnError(err, "Could connect to azure blob storage")
+	fmt.Println("Connected to azure blob storage")
 
 	rabbitMqClient, err := rabbitmq.NewRabbitMq(config)
 	errors.FailOnError(err, "Could not set connect to rabbitmq")
@@ -48,5 +52,5 @@ func main() {
 	publisher := queue.NewPublisher(rabbitMqClient)
 
 	s := server.NewServer(entClient, twilioAdapter, publisher)
-	s.Bootstrap()
+	s.Bootstrap(blobStorageHandler)
 }

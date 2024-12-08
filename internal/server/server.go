@@ -4,6 +4,7 @@ import (
 	"example.com/boiletplate/ent"
 	otphandler "example.com/boiletplate/infrastructure/OTPHandler"
 	"example.com/boiletplate/infrastructure/queue"
+	"example.com/boiletplate/infrastructure/upload-blob/port"
 	"github.com/gin-gonic/gin"
 )
 
@@ -23,8 +24,8 @@ func NewServer(entClient *ent.Client, otpHandler otphandler.OTPHandler, publishe
 	}
 }
 
-func (s *Server) Bootstrap() {
-	NewHandlers(s, s.publisher, s.otpHandler)
+func (s *Server) Bootstrap(blobHandler port.HandleBlobPort) {
+	NewHandlers(s, s.publisher, s.otpHandler, blobHandler)
 	s.Gin.Use(gin.Logger())
 	s.Gin.Use(gin.Recovery())
 	err := s.Gin.Run()

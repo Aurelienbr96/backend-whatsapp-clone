@@ -1,6 +1,7 @@
 package server
 
 import (
+	"example.com/boiletplate/infrastructure/upload-blob/port"
 	authHttp "example.com/boiletplate/internal/auth/delivery/http"
 	authUseCase "example.com/boiletplate/internal/auth/usecase"
 	contactHttp "example.com/boiletplate/internal/contact/delivery/http"
@@ -17,7 +18,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func NewHandlers(s *Server, publisher queue.IPublisher, otpHandlers otphandler.OTPHandler) {
+func NewHandlers(s *Server, publisher queue.IPublisher, otpHandlers otphandler.OTPHandler, blobHandler port.HandleBlobPort) {
 	// repository
 	userRepository := repository.NewUserRepository(s.entClient)
 	contactRepository := cRepository.NewContactRepository(s.entClient)
@@ -25,7 +26,7 @@ func NewHandlers(s *Server, publisher queue.IPublisher, otpHandlers otphandler.O
 	// use cases
 	loginUseCase := authUseCase.NewLoginUserUseCase(userRepository, otpHandlers)
 	createUserUseCase := userUseCase.NewCreateUserUseCase(userRepository, publisher)
-	updateUserUseCase := userUseCase.NewUpdateUserUseCase(userRepository)
+	updateUserUseCase := userUseCase.NewUpdateUserUseCase(userRepository, blobHandler)
 	syncContactsUseCase := userUseCase.NewSyncContactUseCase(contactRepository, userRepository)
 
 	// controllers

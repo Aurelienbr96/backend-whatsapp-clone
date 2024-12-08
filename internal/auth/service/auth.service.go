@@ -71,7 +71,7 @@ func SetRefreshTokenCookie(c *gin.Context, refreshToken string) {
 		refreshToken,
 		3600*24*30,
 		"/",
-		"localhost",
+		"a262-2a02-8308-205-1c00-b4d2-d2c9-d40d-e68b.ngrok-free.app",
 		false,
 		true,
 	)
@@ -84,7 +84,7 @@ func SetAccessTokenCookie(c *gin.Context, accessToken string) {
 		accessToken,
 		60*15,
 		"/",
-		"localhost",
+		"a262-2a02-8308-205-1c00-b4d2-d2c9-d40d-e68b.ngrok-free.app",
 		false,
 		true,
 	)

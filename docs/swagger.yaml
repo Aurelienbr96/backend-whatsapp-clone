@@ -111,9 +111,9 @@ paths:
       - application/json
       responses:
         "201":
-          description: You are logged in
+          description: Created
           schema:
-            type: string
+            $ref: '#/definitions/entity.User'
       summary: Login User
       tags:
       - example
@@ -143,7 +143,7 @@ paths:
         "201":
           description: Created
           schema:
-            type: string
+            $ref: '#/definitions/entity.User'
       summary: Refresh Access token
       tags:
       - example
@@ -151,7 +151,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Login a user
+      description: Send an OTP by sms
       parameters:
       - description: Send code body
         in: body
@@ -163,10 +163,10 @@ paths:
       - application/json
       responses:
         "201":
-          description: Code sent s
+          description: Code sent
           schema:
             type: string
-      summary: Login User
+      summary: Send a code to a User
       tags:
       - example
   /contact/{userId}:

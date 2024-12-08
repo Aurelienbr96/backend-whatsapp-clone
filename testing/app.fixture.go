@@ -5,6 +5,7 @@ import (
 	"example.com/boiletplate/ent"
 	otphandler "example.com/boiletplate/infrastructure/OTPHandler"
 	mock_queue "example.com/boiletplate/infrastructure/queue/mock"
+	mockpackage "example.com/boiletplate/infrastructure/upload-blob/mock"
 	"example.com/boiletplate/internal/server"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -36,10 +37,11 @@ func NewTestServer(t FullGinkgoTInterface) *TestServer {
 	mockPublisher := mock_queue.NewMockIPublisher(ctrl)
 
 	// Configure mock expectations if any
+	mockBlock := mockpackage.NewMockBlobAdapter()
 
 	// Initialize server with mocked dependencies
 	srv := server.NewServer(client, otpHandler, mockPublisher)
-	server.NewHandlers(srv, mockPublisher, otpHandler) // Initialize routes
+	server.NewHandlers(srv, mockPublisher, otpHandler, mockBlock) // Initialize routes
 
 	return &TestServer{
 		Gin:       srv.Gin,

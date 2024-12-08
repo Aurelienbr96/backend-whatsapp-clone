@@ -6,7 +6,9 @@ import (
 	"example.com/boiletplate/internal/auth/model"
 	"example.com/boiletplate/internal/auth/service"
 	"example.com/boiletplate/internal/user/adapter"
+	"example.com/boiletplate/internal/user/entity"
 	"example.com/boiletplate/internal/user/repository"
+	"github.com/google/uuid"
 
 	"fmt"
 )
@@ -23,11 +25,17 @@ func NewLoginUserUseCase(uRepo *repository.Repository, otpHandler otphandler.OTP
 	return &LoginUserUseCase{uRepo: uRepo, otpHandler: otpHandler}
 }
 
-func (l *LoginUserUseCase) Execute(phoneNumber string, code string) (*model.Auth, error) {
+type AuthWithUser struct {
+	Auth *model.Auth
+	User *entity.User
+}
 
-	fmt.Printf("phone number: %s", phoneNumber)
+func (l *LoginUserUseCase) Execute(phoneNumber string, code string) (*AuthWithUser, error) {
 
-	u, err := l.uRepo.GetOneByPhoneNumber(phoneNumber)
+	entityUser := entity.NewUser(uuid.New(), "", phoneNumber, false, "")
+	entityUser.RemovePhoneNumberWhiteSpace()
+
+	u, err := l.uRepo.GetOneByPhoneNumber(entityUser.PhoneNumber)
 	if err != nil {
 		switch {
 		case ent.IsNotFound(err):
@@ -66,5 +74,10 @@ func (l *LoginUserUseCase) Execute(phoneNumber string, code string) (*model.Auth
 		AccessToken:  accessToken,
 	}
 
-	return authPayload, nil
+	r := &AuthWithUser{
+		Auth: authPayload,
+		User: userToLogin,
+	}
+
+	return r, nil
 }

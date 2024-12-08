@@ -1,10 +1,14 @@
 package http
 
 import (
+	"example.com/boiletplate/ent"
 	otphandler "example.com/boiletplate/infrastructure/OTPHandler"
 	"example.com/boiletplate/internal/auth/service"
 	"example.com/boiletplate/internal/auth/usecase"
+	"example.com/boiletplate/internal/user/adapter"
+	"example.com/boiletplate/internal/user/entity"
 	"example.com/boiletplate/internal/user/repository"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"net/http"
@@ -39,7 +43,7 @@ func createGinError(msg string) gin.H {
 // @Accept json
 // @Produce json
 // @Param data body LoginDTO true "Login data"
-// @Success 201 {string} string "You are logged in"
+// @Success 201 {object} entity.User
 // @Router /auth/login [post]
 func (a *AuthController) Login(c *gin.Context) {
 
@@ -50,16 +54,17 @@ func (a *AuthController) Login(c *gin.Context) {
 		return
 	}
 
-	t, err := a.loginUseCase.Execute(l.PhoneNumber, l.Code)
+	r, err := a.loginUseCase.Execute(l.PhoneNumber, l.Code)
 	if err != nil {
+		fmt.Printf("error: %v", err)
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
 
-	service.SetAccessTokenCookie(c, t.AccessToken)
-	service.SetRefreshTokenCookie(c, t.RefreshToken)
+	service.SetAccessTokenCookie(c, r.Auth.AccessToken)
+	service.SetRefreshTokenCookie(c, r.Auth.RefreshToken)
 
-	c.JSON(http.StatusCreated, gin.H{"message": "You are logged in"})
+	c.JSON(http.StatusCreated, r.User)
 }
 
 // @Summary Logout User
@@ -79,14 +84,14 @@ type SendCodeDTO struct {
 	PhoneNumber string `json:"phoneNumber" binding:"required"`
 }
 
-// @Summary Login User
+// @Summary Send a code to a User
 // @Schemes
-// @Description Login a user
+// @Description Send an OTP by sms
 // @Tags example
 // @Accept json
 // @Produce json
 // @Param data body SendCodeDTO true "Send code body"
-// @Success 201 {string} string "Code sent s"
+// @Success 201 {string} string "Code sent"
 // @Router /auth/send-code [post]
 func (a *AuthController) SendCode(c *gin.Context) {
 	l := SendCodeDTO{}
@@ -95,6 +100,22 @@ func (a *AuthController) SendCode(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	entityUser := entity.NewUser(uuid.New(), "", l.PhoneNumber, false, "")
+	entityUser.RemovePhoneNumberWhiteSpace()
+	_, err := a.uRepo.GetOneByPhoneNumber(entityUser.PhoneNumber)
+	if err != nil {
+		switch {
+		case ent.IsNotFound(err):
+			c.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
+			return
+		default:
+			// Handle other errors
+			fmt.Printf("Unexpected error: %v\n", err)
+			c.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
+			return
+		}
+	}
+
 	/* phoneNumber, err := phonenumbers.Parse(l.PhoneNumber, "FR")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -105,7 +126,7 @@ func (a *AuthController) SendCode(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid phone number"})
 		return
 	} */
-	err := a.otpHandler.SendOTP(l.PhoneNumber)
+	err = a.otpHandler.SendOTP(l.PhoneNumber)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, createGinError(err.Error()))
 		return
@@ -119,7 +140,7 @@ func (a *AuthController) SendCode(c *gin.Context) {
 // @Tags example
 // @Accept json
 // @Produce json
-// @Success 201 {string} string ""
+// @Success 201 {object} entity.User
 // @Router /auth/refresh [post]
 func (a *AuthController) RefreshToken(c *gin.Context) {
 	refreshToken, err := c.Cookie("refresh-token")
@@ -140,6 +161,22 @@ func (a *AuthController) RefreshToken(c *gin.Context) {
 		return
 	}
 
+	u, err := a.uRepo.GetOneById(uuidID)
+	if err != nil {
+		switch {
+		case ent.IsNotFound(err):
+			c.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
+			return
+		default:
+			// Handle other errors
+			fmt.Printf("Unexpected error: %v\n", err)
+			c.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
+			return
+		}
+	}
+
+	user := adapter.EntUserAdapter(u)
+
 	accessToken, err := service.SignInAccessToken(uuidID, ACCESS_TOKEN_SECRET)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Could not sign in access token"})
@@ -147,5 +184,5 @@ func (a *AuthController) RefreshToken(c *gin.Context) {
 	}
 
 	service.SetAccessTokenCookie(c, accessToken)
-	c.JSON(http.StatusCreated, gin.H{"message": "Refresh token successfully created"})
+	c.JSON(http.StatusCreated, user)
 }

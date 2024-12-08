@@ -7,15 +7,22 @@ import (
 )
 
 type Config struct {
-	Twilio   TwilioConfig
-	Postgres PostgresConfig
-	RabbitMq RabbitMqConfig
+	Twilio           TwilioConfig
+	Postgres         PostgresConfig
+	RabbitMq         RabbitMqConfig
+	AzureBlobStorage AzureBlobStorageConfig
 }
 
 type TwilioConfig struct {
 	TwilioAccountSid string
 	TwilioAuthToken  string
 	VerifyServiceSid string
+}
+
+type AzureBlobStorageConfig struct {
+	AccountName   string
+	AccountKey    string
+	ContainerName string
 }
 
 type PostgresConfig struct {

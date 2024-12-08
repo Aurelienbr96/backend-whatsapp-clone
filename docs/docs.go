@@ -41,9 +41,9 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "201": {
-                        "description": "You are logged in",
+                        "description": "Created",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/entity.User"
                         }
                     }
                 }
@@ -89,7 +89,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/entity.User"
                         }
                     }
                 }
@@ -97,7 +97,7 @@ const docTemplate = `{
         },
         "/auth/send-code": {
             "post": {
-                "description": "Login a user",
+                "description": "Send an OTP by sms",
                 "consumes": [
                     "application/json"
                 ],
@@ -107,7 +107,7 @@ const docTemplate = `{
                 "tags": [
                     "example"
                 ],
-                "summary": "Login User",
+                "summary": "Send a code to a User",
                 "parameters": [
                     {
                         "description": "Send code body",
@@ -121,7 +121,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "201": {
-                        "description": "Code sent s",
+                        "description": "Code sent",
                         "schema": {
                             "type": "string"
                         }

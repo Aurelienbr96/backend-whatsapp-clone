@@ -5,7 +5,7 @@ import (
 	"example.com/boiletplate/ent"
 	otphandler "example.com/boiletplate/infrastructure/OTPHandler"
 	mock_queue "example.com/boiletplate/infrastructure/queue/mock"
-	mockpackage "example.com/boiletplate/infrastructure/upload-blob/mock"
+	mockpackage "example.com/boiletplate/infrastructure/upload-blob/adapter/mock"
 	"example.com/boiletplate/internal/server"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -48,6 +48,10 @@ func NewTestServer(t FullGinkgoTInterface) *TestServer {
 		Client:    client,
 		MockQueue: mockPublisher,
 	}
+}
+
+func (t *TestServer) Close() {
+	t.Client.Close()
 }
 
 func (t *TestServer) CreateManyUsers(users []*UserFixture) {

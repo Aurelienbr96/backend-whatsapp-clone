@@ -1,7 +1,7 @@
 package main
 
 import (
-	"example.com/boiletplate/infrastructure/upload-blob/adapter"
+	"example.com/boiletplate/infrastructure/upload-blob/adapter/azure"
 	"fmt"
 	"log"
 
@@ -35,7 +35,7 @@ func main() {
 	defer entClient.Close()
 	fmt.Println("Connected to postgres")
 
-	blobStorageHandler, err := adapter.NewAzureBlobAdapter(config)
+	blobStorageHandler, err := azure.NewAzureBlobAdapter(config)
 	errors.FailOnError(err, "Could connect to azure blob storage")
 	fmt.Println("Connected to azure blob storage")
 

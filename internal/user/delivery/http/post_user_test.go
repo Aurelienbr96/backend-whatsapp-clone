@@ -3,7 +3,6 @@ package http_test
 import (
 	"encoding/json"
 	"example.com/boiletplate/internal/user/repository"
-	"github.com/gin-gonic/gin"
 )
 
 import (
@@ -21,25 +20,24 @@ import (
 
 var _ = FDescribe("Most outer container", Ordered, ContinueOnFailure, func() {
 	var (
-		testServer     *gin.Engine
+		testServer     *testing.TestServer
 		client         *ent.Client
 		mockPublisher  *mockqueue.MockIPublisher
 		user           *testing.UserFixture
 		userRepository *repository.Repository
 	)
 	BeforeAll(func() {
-		t := testing.NewTestServer(GinkgoT())
-		testServer = t.Gin
-		client = t.Client
-		mockPublisher = t.MockQueue
+		testServer = testing.NewTestServer(GinkgoT())
+		client = testServer.Client
+		mockPublisher = testServer.MockQueue
 
 		user = testing.GenerateUser("+33602222639")
 		userRepository = repository.NewUserRepository(client)
 
-		t.CreateManyUsers([]*testing.UserFixture{user})
+		testServer.CreateManyUsers([]*testing.UserFixture{user})
 	})
 	AfterAll(func() {
-		client.Close()
+		testServer.Close()
 	})
 	Describe("POST CREATE A USER", func() {
 
@@ -54,8 +52,10 @@ var _ = FDescribe("Most outer container", Ordered, ContinueOnFailure, func() {
 				req.Header.Set("Content-Type", "application/json")
 				resp := httptest.NewRecorder()
 
+				fmt.Printf("test server: %v", testServer)
+
 				// Act: Send request to the test server
-				testServer.ServeHTTP(resp, req)
+				testServer.Gin.ServeHTTP(resp, req)
 
 				user, _ := userRepository.GetOneByPhoneNumber(phoneNumber)
 
@@ -74,7 +74,7 @@ var _ = FDescribe("Most outer container", Ordered, ContinueOnFailure, func() {
 			req.Header.Set("Content-Type", "application/json")
 			resp := httptest.NewRecorder()
 
-			testServer.ServeHTTP(resp, req)
+			testServer.Gin.ServeHTTP(resp, req)
 			jsonUser, _ := json.Marshal(user)
 
 			Expect(resp.Body.String()).To(Equal(jsonUser))
